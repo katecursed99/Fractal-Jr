@@ -363,6 +363,28 @@ def draw_to_terminal(frac_matrix_f,width,height,dict_catchers,frac_matrix_s):
         #print(e)
     clrprint('Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3)), clr='red', end=' ')
 
+def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height):
+    ##########################
+    #draws to the pygame screen
+    ##########################
+    x_tick = 0
+    y_tick = 0
+    for i, e in enumerate(frac_matrix_f):
+        
+        row_end = (i + 1)% width == 0
+        spill_over = (frac_matrix_s[i])
+        scaled_x = screen_width // width
+        scaled_y = screen_height // height
+        for dict_ent in dict_catchers:
+            if e == dict_ent['id']:
+                #Generate the pixel
+                generated_pixel = pygame.Rect(x_tick*scaled_x,y_tick*scaled_x,scaled_x,scaled_y)
+                pygame.draw.rect(screen, e*25, generated_pixel)
+        x_tick += 1
+        if row_end == True:
+            x_tick=0
+            y_tick+=1
+
 def cycle_list(input_list):
     ##########################
     #cycles through a list for color cycling
@@ -535,8 +557,8 @@ def draw_title(ascii_color,loops):
 
 my_font = pygame.font.SysFont('Arial', 30)
 draw_title(ascii_colors,20)
-screen_width = 128
-screen_height = 128
+screen_width = 512
+screen_height = 512
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 FPS = 30
 refresh_every = 6
@@ -547,7 +569,7 @@ while True:
     #and passing it over to draw_to_terminal in the following line
     f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter)
     draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
-
+    draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
     #"Game loop" logic for color cycling
     c_ticks = 0
     fake_terminal = "" #this is the onscreen terminal in the pygame window
@@ -634,6 +656,7 @@ while True:
 
         terminal_screen = my_font.render(fake_terminal, False, (250, 250, 250))
         screen.fill((0,0,0))
+        draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
         screen.blit(terminal_screen, (0,0))
         if c_ticks % refresh_every == refresh_every-3:
             refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
