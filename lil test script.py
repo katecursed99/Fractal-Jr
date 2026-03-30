@@ -1,4 +1,5 @@
 from clrprint import *
+import pygame
 
 ascii_colors = [0,"red", "yellow", "green", "blue", "purple", "pink" ]
 
@@ -24,5 +25,38 @@ def rainbow_print_anim(text):
         cycle_list(ascii_colors)
 
         clrprint(text_split[i], clr= ascii_colors[0],end='')
+
+
+
+#Initialize Pygame, screen, and clock
+pygame.init()
+
+
+screen_width = 64
+screen_height = 64
+screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+FPS = 60
+clock = pygame.time.Clock()
+cycle_loop = True
+print(list(range(ord('a'), ord('z') + 1)))
+
+#Game engine loop
+while cycle_loop:
     
-rainbow_print("hi I'm Kate")
+    for event in pygame.event.get():
+        #Keyboard triggers
+        if event.type == pygame.KEYDOWN:
+
+            if event.key == pygame.K_ESCAPE:
+                cycle_loop = not cycle
+
+            if event.key == pygame.K_SPACE:
+                rainbow_print("hi I'm Kate ")
+        #Resize screen
+        if event.type == pygame.VIDEORESIZE:
+            screen_width, screen_height = event.w, event.h
+            screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+    
+    clock.tick(FPS)
+    pygame.display.flip()
+    
