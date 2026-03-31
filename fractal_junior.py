@@ -1,3 +1,5 @@
+
+
 #imports
 import math
 import sys
@@ -10,14 +12,12 @@ from clrprint import *
 import numpy as np
 
 
-def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode):
+def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode,read_comm,max_save_slots):
     ##########################
     #asks for a name to save the file as, then writes current settings
     #to a JSON called presets.json
     ##########################
-    max_save_slots = 32 #arbitrary number essentially, but having a max stops it from
-                        #searching forever in an intentionally long JSON file
-
+    
     save_data = {
         "name": "",
         "xpos": xpos,
@@ -37,7 +37,7 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
         "mode": mode
         }
     
-    save_data["name"] = str(input('Name your new preset: '))
+    save_data["name"] = read_comm
     
     if os.path.exists('presets.json'):
         with open('presets.json', 'r') as f:
@@ -45,7 +45,7 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
     else:
         data = []
 
-    if data.len() >= max_save_slots:
+    if len(data) >= max_save_slots:
         print('Need to delete a preset to make room!')
     else:
         data.append(save_data)
@@ -53,7 +53,32 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
     with open('presets.json', 'w') as f:
         json.dump(data, f, indent=2)
 
-def load_preset():
+def show_presets(message,max_save_slots):
+    with open('presets.json','r') as preset_store:
+        data_temp = preset_store.read()
+        data_store = json.loads(data_temp)
+        message = 'Presets: '
+        for diction in data_store:
+            message += diction["name"]+' '
+            if i >= max_save_slots:
+                break
+            
+def delete_preset(user_entry,max_save_slots):
+    with open('presets.json','r') as preset_store:
+        data_temp = preset_store.read()
+        data_store = json.loads(data_temp)
+
+        #print(dict(data_store))
+        preset_name = user_entry
+        i=0
+        for diction in data_store:
+            i+=1
+            if i >= max_save_slots:
+                break #So a ridiculously long JSON doesn't brick me
+            if preset_name == diction["name"]:
+                diction.remove()
+
+def load_preset(message,read_comm):
     ##########################
     #pulls in presets from the JSON and lists them out, then asks for one to
     #load and finally loads it
@@ -66,11 +91,9 @@ def load_preset():
     with open('presets.json','r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
-        print('Presets:')
-        for diction in data_store:
-            print(diction["name"], end=' ')
+
         #print(dict(data_store))
-        preset_name = str(input('\nEnter a preset to load'))
+        preset_name = read_comm
         i=0
         for diction in data_store:
             i+=1
@@ -93,8 +116,9 @@ def load_preset():
                 max_iter = diction["max_iter"]
                 mode = diction["mode"]
                 break
-            if i>=data_store.len() or i >= max_save_slots:
-                print('Preset not found. Check spelling maybe?')
+            if i>=len(data_store) or i >= max_save_slots:
+                break
+                
 def apply_mods(mode,cx,cy,z_axis,w_axis,c_var_r,c_var_i):
     ##########################
     #returns c and z based on mode
@@ -363,7 +387,7 @@ def draw_to_terminal(frac_matrix_f,width,height,dict_catchers,frac_matrix_s):
         #print(e)
     clrprint('Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3)), clr='red', end=' ')
 
-def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height):
+def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height,cycle,c_ticks):
     ##########################
     #draws to the pygame screen
     ##########################
@@ -375,11 +399,32 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
         spill_over = (frac_matrix_s[i])
         scaled_x = screen_width // width
         scaled_y = screen_height // height
-        for dict_ent in dict_catchers:
-            if e == dict_ent['id']:
-                #Generate the pixel
-                generated_pixel = pygame.Rect(x_tick*scaled_x,y_tick*scaled_x,scaled_x,scaled_y)
-                pygame.draw.rect(screen, e*25, generated_pixel)
+
+        color_hsv = pygame.Color(0) #init color
+
+        #Color math
+        if cycle == True:
+            hue_mod = c_ticks#//10*10
+        else:
+            hue_mod = 0
+        color_stops = len(dict_catchers)
+        color_hue = int(round((360/color_stops*e)+(frac_matrix_s[i]*10)+hue_mod)%360)
+        color_sat = 80
+        
+        
+        color_var = int(round((frac_matrix_s[i] * 10)%100))
+
+        #print(color_hue,color_var,color_sat)
+        color_hsv.hsva = (color_hue,color_sat,color_var,100)
+        
+        border_x = (screen_width - (width*scaled_x)) // 2
+        border_y = (screen_height - (height*scaled_y)) // 2
+        
+        #Generate the pixel
+        generated_pixel = pygame.Rect(border_x+x_tick*scaled_x,border_y+y_tick*scaled_y,scaled_x,scaled_y)
+        pygame.draw.rect(screen, color_hsv, generated_pixel)
+
+        #Handle pixel counting
         x_tick += 1
         if row_end == True:
             x_tick=0
@@ -397,43 +442,233 @@ def cycle_list(input_list):
             input_list[i] = input_list[0]
             break
 
+def terminal_keyboard_input(event_key):
+    ##########################
+    #Super obtuse way of taking keyboard inputs into pygame
+    #and treating it like a 'terminal'
+    ##########################
+    fake_terminal = ""
+    if event_key == pygame.K_a:
+        fake_terminal += 'A' if shift_pressed else 'a'
+    elif event_key == pygame.K_b:
+        fake_terminal += 'B' if shift_pressed else 'b'
+    elif event_key == pygame.K_c:
+        fake_terminal += 'C' if shift_pressed else 'c'
+    elif event_key == pygame.K_d:
+        fake_terminal += 'D' if shift_pressed else 'd'
+    elif event_key == pygame.K_e:
+        fake_terminal += 'E' if shift_pressed else 'e'
+    elif event_key == pygame.K_f:
+        fake_terminal += 'F' if shift_pressed else 'f'
+    elif event_key == pygame.K_g:
+        fake_terminal += 'G' if shift_pressed else 'g'
+    elif event_key == pygame.K_h:
+        fake_terminal += 'H' if shift_pressed else 'h'
+    elif event_key == pygame.K_i:
+        fake_terminal += 'I' if shift_pressed else 'i'
+    elif event_key == pygame.K_j:
+        fake_terminal += 'J' if shift_pressed else 'j'
+    elif event_key == pygame.K_k:
+        fake_terminal += 'K' if shift_pressed else 'k'
+    elif event_key == pygame.K_l:
+        fake_terminal += 'L' if shift_pressed else 'l'
+    elif event_key == pygame.K_m:
+        fake_terminal += 'M' if shift_pressed else 'm'
+    elif event_key == pygame.K_n:
+        fake_terminal += 'N' if shift_pressed else 'n'
+    elif event_key == pygame.K_o:
+        fake_terminal += 'O' if shift_pressed else 'o'
+    elif event_key == pygame.K_p:
+        fake_terminal += 'P' if shift_pressed else 'p'
+    elif event_key == pygame.K_q:
+        fake_terminal += 'Q' if shift_pressed else 'q'
+    elif event_key == pygame.K_r:
+        fake_terminal += 'R' if shift_pressed else 'r'
+    elif event_key == pygame.K_s:
+        fake_terminal += 'S' if shift_pressed else 's'
+    elif event_key == pygame.K_t:
+        fake_terminal += 'T' if shift_pressed else 't'
+    elif event_key == pygame.K_u:
+        fake_terminal += 'U' if shift_pressed else 'u'
+    elif event_key == pygame.K_v:
+        fake_terminal += 'V' if shift_pressed else 'v'
+    elif event_key == pygame.K_w:
+        fake_terminal += 'W' if shift_pressed else 'w'
+    elif event_key == pygame.K_x:
+        fake_terminal += 'X' if shift_pressed else 'x'
+    elif event_key == pygame.K_y:
+        fake_terminal += 'Y' if shift_pressed else 'y'
+    elif event_key == pygame.K_z:
+        fake_terminal += 'Z' if shift_pressed else 'z'
+    elif event_key == pygame.K_0:
+        fake_terminal += '0'
+    elif event_key == pygame.K_1:
+        fake_terminal += '1'
+    elif event_key == pygame.K_2:
+        fake_terminal += '2'
+    elif event_key == pygame.K_3:
+        fake_terminal += '3'
+    elif event_key == pygame.K_4:
+        fake_terminal += '4'
+    elif event_key == pygame.K_5:
+        fake_terminal += '5'
+    elif event_key == pygame.K_6:
+        fake_terminal += '6'
+    elif event_key == pygame.K_7:
+        fake_terminal += '7'
+    elif event_key == pygame.K_8:
+        fake_terminal += '8'
+    elif event_key == pygame.K_9:
+        fake_terminal += '9'
+        
+    return fake_terminal
+
+def refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s):
+    ##########################
+    #refreshes the fractal for color cycling
+    #
+    ##########################
+    if cycle == True:
+        cycle_fractal_colors(dict_catchers,ascii_colors)  
+        draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
+
+        
+def cycle_fractal_colors(dict_catchers,ascii_colors):
+    ##########################
+    #handles the actual cycling of colors
+    #
+    ##########################
+    #First cycle the ascii colors list
+    cycle_list(ascii_colors)
+    #Then use the list to assign the new colors to each catcher
+    for catcher in dict_catchers:
+        col_index = catcher["id"] % len(ascii_colors)
+        catcher["color"] = ascii_colors[col_index]
+    
+def draw_title(ascii_color,loops):
+    ##########################
+    #ASCII logo for the terminal
+    #
+    ##########################
+    i=0
+    if dev_mode == False:
+        while i <= loops:
+            time.sleep(0.08)
+            os.system('cls' if os.name == 'nt' else 'clear')
+            clrprint(' ______   ______     ______     ______     ______   ______     __         ', clr=ascii_color[1])
+            clrprint('/\\  ___\\ /\\  == \\   /\\  __ \\   /\\  ___\\   /\\__  _\\ /\\  __ \\   /\\ \\        ', clr=ascii_color[1])
+            clrprint('\\ \\  __\\ \\ \\  __<   \\ \\  __ \\  \\ \\ \\____  \\/_/\\ \\/ \\ \\  __ \\  \\ \\ \\____   ', clr=ascii_color[2])
+            clrprint(' \\ \\_\\    \\ \\_\\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\    \\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\  ', clr=ascii_color[3])
+            clrprint('  \\/_/     \\/_/ /_/   \\/_/\\/_/   \\/_____/     \\/_/   \\/_/\\/_/   \\/_____/  ', clr=ascii_color[4])
+            clrprint('                                                                          ', clr=ascii_color[3])
+            clrprint('                                                         __     ______    ', clr=ascii_color[5])
+            clrprint('                                                        /\\ \\   /\\  == \\   ', clr=ascii_color[5])
+            clrprint('                                                       _\\_\\ \\  \\ \\  __<   ', clr=ascii_color[6])
+            clrprint('                                                      /\\_____\\  \\ \\_\\ \\_\\ ', clr=ascii_color[0])
+            clrprint('                                                      \\/_____/   \\/_/ /_/ ', clr=ascii_color[1])
+            clrprint('                                                                          ', clr=ascii_color[0])
+            if i >= loops//3:
+                clrprint('      © Katherina L Jesek               2026                MIT License',clr='red')
+            else:
+                print('')
+            if i >= loops//3*2:
+                clrprint('      type help and hit enter for info on commands!  ',clr='yellow')
+            else:
+                print('')
+            #os.system('cls' if os.name == 'nt' else 'clear')
+
+            i+=1
+        cycle_list(ascii_colors)
+        if i != loops:
+            print('')
+    clrprint('      loading fractal . . .')
+    time.sleep(2)
+
+
+def set_up_fractal_environment():
+    ##########################
+    #Returns our initial 'global' variables (so they can be contained
+    #in a non-global environment)
+    ##########################
+    xpos = 0
+    ypos = 0
+    width = 256
+    height = 256
+    viewX = -0.5
+    viewY = 0
+    scale = 1
+    z_axis = 0
+    w_axis = 0
+    zoom = 1
+    power = 2.0
+    c_var_i = 0
+    c_var_r = 1
+    c_var = complex(c_var_i,c_var_r)
+    y_constant = 1
+    max_iter = 100
+    cycle = True
+    game_cycle = True
+    trace_show = True
+    dyn_pointer = 'y'
+    dev_mode = True
+    mode = 'mandelbrot'
+    message = 'command:'
+    max_save_slots = 32 #arbitrary number essentially, but having a max stops it from
+                        #searching forever in an intentionally long JSON file
+
+
+    return xpos, ypos, width, height, viewX, viewY, scale, z_axis, w_axis, zoom, power, c_var_i, c_var_r, c_var, y_constant, max_iter, cycle, game_cycle, trace_show, dyn_pointer, dev_mode, mode, message, max_save_slots
+
+def fake_print(input_text,message):
+    ##########################
+    #Simple way to ctrl+r all the terminal
+    #notifications into on-screen notifications
+    ##########################
+    message = input_text
+
+def play_animation(start_keyframe,end_keyframe,frame):
+    ##########################
+    #Handles the list/dictionary part of the animation. see
+    #keyframe_formula to edit the curve (it's just linear rn)
+    #
+    ##########################
+    anim_length = 100 #Should make this user-editable later
+    normal_time = (frame) / (anim_length)
+    new_keyframe = {}
+    key_traits = ["xpos","ypos","width","height","viewX","viewY","scale","z_axis",
+                  "w_axis","zoom","power","c_var_i","c_var_r","max_iter"]
+    for trait in key_traits:
+        new_keyframe[trait] = keyframe_formula(start_keyframe,end_keyframe,trait,normal_time)
+   
+    return new_keyframe,anim_length
+
+def keyframe_formula(start_keyframe,end_keyframe,entry_name,normal_time):
+    ##########################
+    #Does the main math for play_animation and returns the new
+    #keyframe
+    #
+    ##########################
+    return start_keyframe[entry_name]+(end_keyframe[entry_name]-start_keyframe[entry_name])*normal_time
+
+def cache_animation(frame,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks):
+    
+
 #---------Global variables-------#
 
-xpos = 0
-ypos = 0
-width = 32
-height = 32
-viewX = -0.5
-viewY = 0
-scale = 1
-z_axis = 0
-w_axis = 0
-zoom = 1
-power = 2.0
-c_var_i = 0
-c_var_r = 1
-c_var = complex(c_var_i,c_var_r)
-y_constant = 1
-max_iter = 100
-cycle = True
-game_cycle = True
-trace_show = True
-dyn_pointer = 'y'
-dev_mode = True
-mode = 'mandelbrot'
 
 
-
+xpos, ypos, width, height, viewX, viewY, scale, z_axis, w_axis, zoom, power, c_var_i, c_var_r, c_var, y_constant, max_iter, cycle, game_cycle, trace_show, dyn_pointer, dev_mode, mode, message, max_save_slots = set_up_fractal_environment()
                 
 
 
 
-print('loading , , ,')
+
 pygame.mixer.init() 
 pygame.init()
 
 sound_list = [pygame.mixer.Sound('assets/magic.wav'),pygame.mixer.Sound('assets/blip.wav'),pygame.mixer.Sound('assets/dissonant.wav')]
-
+pygame.mixer.music.load('assets/music.mp3')
+pygame.mixer.music.play(-1)
 sound_list[0].play()
 
 
@@ -449,7 +684,6 @@ dict_catchers = [{
         "catcher":[],
         "flag":False,
         "color":'black',
-
         "thresh":3
             },{
         "id":2,
@@ -494,86 +728,54 @@ dict_catchers = [{
         "thresh":max_iter-1
             }
         ]
-def refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s):
-    ##########################
-    #reassigns colors to the fractal each refresh
-    #
-    ##########################
-    if cycle == True:
-        cycle_fractal_colors(dict_catchers,ascii_colors)  
-        draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
-
-        
-def cycle_fractal_colors(dict_catchers,ascii_colors):
-    #First cycle the ascii colors list
-    cycle_list(ascii_colors)
-    #Then use the list to assign the new colors to each catcher
-    for catcher in dict_catchers:
-        col_index = catcher["id"] % len(ascii_colors)
-        catcher["color"] = ascii_colors[col_index]
-    
 
 
 for dicti in dict_catchers:
     dicti["thresh"] = max_iter//len(dict_catchers)*dicti["id"]//4
-    dicti["color"]
+    
     
 #------------------------------#
 
-def draw_title(ascii_color,loops):
-    i=0
-    if dev_mode == False:
-        while i <= loops:
-            time.sleep(0.08)
-            os.system('cls' if os.name == 'nt' else 'clear')
-            clrprint(' ______   ______     ______     ______     ______   ______     __         ', clr=ascii_color[1])
-            clrprint('/\\  ___\\ /\\  == \\   /\\  __ \\   /\\  ___\\   /\\__  _\\ /\\  __ \\   /\\ \\        ', clr=ascii_color[1])
-            clrprint('\\ \\  __\\ \\ \\  __<   \\ \\  __ \\  \\ \\ \\____  \\/_/\\ \\/ \\ \\  __ \\  \\ \\ \\____   ', clr=ascii_color[2])
-            clrprint(' \\ \\_\\    \\ \\_\\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\    \\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\  ', clr=ascii_color[3])
-            clrprint('  \\/_/     \\/_/ /_/   \\/_/\\/_/   \\/_____/     \\/_/   \\/_/\\/_/   \\/_____/  ', clr=ascii_color[4])
-            clrprint('                                                                          ', clr=ascii_color[3])
-            clrprint('                                                         __     ______    ', clr=ascii_color[5])
-            clrprint('                                                        /\\ \\   /\\  == \\   ', clr=ascii_color[5])
-            clrprint('                                                       _\\_\\ \\  \\ \\  __<   ', clr=ascii_color[6])
-            clrprint('                                                      /\\_____\\  \\ \\_\\ \\_\\ ', clr=ascii_color[0])
-            clrprint('                                                      \\/_____/   \\/_/ /_/ ', clr=ascii_color[1])
-            clrprint('                                                                          ', clr=ascii_color[0])
-            if i >= loops//3:
-                clrprint('      © Katherina L Jesek               2026                MIT License',clr='red')
-            else:
-                print('')
-            if i >= loops//3*2:
-                clrprint('      type help and hit enter for info on commands!  ',clr='yellow')
-            else:
-                print('')
-            #os.system('cls' if os.name == 'nt' else 'clear')
 
-            i+=1
-        cycle_list(ascii_colors)
-        if i != loops:
-            print('')
-    clrprint('      loading fractal . . .')
-    time.sleep(2)
-
-my_font = pygame.font.SysFont('Arial', 30)
+frame=0
+my_font = pygame.font.Font('assets/LineBeam.ttf', 25)
 draw_title(ascii_colors,20)
-screen_width = 512
-screen_height = 512
+screen_width = 640
+screen_height = 640
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 FPS = 30
-refresh_every = 6
+refresh_every = 1
 clock = pygame.time.Clock()
-
+animation_flag = False
+resize_flag = False
+load_flag = False
+save_flag = False
+delete_flag = False
+anim_counter = 0
+fake_terminal = "command: " #this is the onscreen terminal in the pygame window
 while True:
     #This lil code is so disgusting but it's just grabbing data from mandelbrot_set
     #and passing it over to draw_to_terminal in the following line
     f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter)
-    draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
-    draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
+    #draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
+    #draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
     #"Game loop" logic for color cycling
     c_ticks = 0
-    fake_terminal = "" #this is the onscreen terminal in the pygame window
+    
     while game_cycle == True:
+        if animation_flag == True:
+            screen.fill((0,0,0))
+            draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks)
+        
+            terminal_screen = my_font.render(message+' '+fake_terminal, False, (200, 200, 200))
+            screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
+            #if c_ticks % refresh_every == 0:
+            #refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
+            clock.tick(FPS)
+            c_ticks += 1
+            pygame.display.flip()
+            break
+
         enter = False
         for event in pygame.event.get():
             keys = pygame.key.get_pressed()
@@ -600,76 +802,69 @@ while True:
                     mem_term = fake_terminal[:-1]
                     fake_terminal = mem_term
 
-                #Take keystrokes (sigh)
-                if event.key == pygame.K_a:
-                    fake_terminal += 'A' if shift_pressed else 'a'
-                if event.key == pygame.K_b:
-                    fake_terminal += 'B' if shift_pressed else 'b'
-                if event.key == pygame.K_c:
-                    fake_terminal += 'C' if shift_pressed else 'c'
-                if event.key == pygame.K_d:
-                    fake_terminal += 'D' if shift_pressed else 'd'
-                if event.key == pygame.K_e:
-                    fake_terminal += 'E' if shift_pressed else 'e'
-                if event.key == pygame.K_f:
-                    fake_terminal += 'F' if shift_pressed else 'f'
-                if event.key == pygame.K_g:
-                    fake_terminal += 'G' if shift_pressed else 'g'
-                if event.key == pygame.K_h:
-                    fake_terminal += 'H' if shift_pressed else 'h'
-                if event.key == pygame.K_i:
-                    fake_terminal += 'I' if shift_pressed else 'i'
-                if event.key == pygame.K_j:
-                    fake_terminal += 'J' if shift_pressed else 'j'
-                if event.key == pygame.K_k:
-                    fake_terminal += 'K' if shift_pressed else 'k'
-                if event.key == pygame.K_l:
-                    fake_terminal += 'L' if shift_pressed else 'l'
-                if event.key == pygame.K_m:
-                    fake_terminal += 'M' if shift_pressed else 'm'
-                if event.key == pygame.K_n:
-                    fake_terminal += 'N' if shift_pressed else 'n'
-                if event.key == pygame.K_o:
-                    fake_terminal += 'O' if shift_pressed else 'o'
-                if event.key == pygame.K_p:
-                    fake_terminal += 'P' if shift_pressed else 'p'
-                if event.key == pygame.K_q:
-                    fake_terminal += 'Q' if shift_pressed else 'q'
-                if event.key == pygame.K_r:
-                    fake_terminal += 'R' if shift_pressed else 'r'
-                if event.key == pygame.K_s:
-                    fake_terminal += 'S' if shift_pressed else 's'
-                if event.key == pygame.K_t:
-                    fake_terminal += 'T' if shift_pressed else 't'
-                if event.key == pygame.K_u:
-                    fake_terminal += 'U' if shift_pressed else 'u'
-                if event.key == pygame.K_v:
-                    fake_terminal += 'V' if shift_pressed else 'v'
-                if event.key == pygame.K_w:
-                    fake_terminal += 'W' if shift_pressed else 'w'
-                if event.key == pygame.K_x:
-                    fake_terminal += 'X' if shift_pressed else 'x'
-                if event.key == pygame.K_y:
-                    fake_terminal += 'Y' if shift_pressed else 'y'
-                if event.key == pygame.K_z:
-                    fake_terminal += 'Z' if shift_pressed else 'z'
+                #Take keystrokes
+                fake_terminal += terminal_keyboard_input(event.key)
+                
 
-        terminal_screen = my_font.render(fake_terminal, False, (250, 250, 250))
+                
+        terminal_screen = my_font.render(message+' '+fake_terminal, False, (250, 250, 250))
+        
         screen.fill((0,0,0))
-        draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
-        screen.blit(terminal_screen, (0,0))
-        if c_ticks % refresh_every == refresh_every-3:
-            refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
+        draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks)
+        
+        
+        screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
+        #if c_ticks % refresh_every == 0:
+            #refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
         clock.tick(FPS)
         c_ticks += 1
         pygame.display.flip()
-        
+
+    
+
+    
     while True:
-        clrprint('command:',clr='white',end='')
+        if animation_flag == True:
+            new_frame,anim_length = play_animation(start_keyframe,end_keyframe,frame)
+            print(new_frame)
+
+                
+            xpos = new_frame["xpos"]
+            ypos = new_frame["ypos"]
+            #width = new_frame["width"]
+            #height = new_frame["height"]
+            viewX = new_frame["viewX"]
+            viewY = new_frame["viewY"]
+            scale = new_frame["scale"]
+            z_axis = new_frame["z_axis"]
+            w_axis = new_frame["w_axis"]
+            zoom = new_frame["zoom"]
+            power = new_frame["power"]
+            c_var_i = new_frame["c_var_i"]
+            c_var_r = new_frame["c_var_r"]
+            max_iter = new_frame["max_iter"]
+
+            
+            frame+=1
+            print(frame)
+            
+            if frame >= anim_length:
+                frame = 0
+                animation_flag = False
+            else:
+                break
+        fake_print('command:',message)
+        
         enter_flag = False
         if not enter:
             read_comm = input(' -')
         if enter_flag == True:
+            break
+        if delete_flag == True:
+            delete_preset(read_comm,max_save_slots)
+            break
+        if load_flag == True:
+            load_preset(message,read_comm,max_save_slots)
             break
         if read_comm == 'help':
             print('\n       Enter commands, then hit enter to run!                           ')
@@ -687,16 +882,26 @@ while True:
                 #IMPORTANT: every word-based command MUST conclude with a break
                 #or it will apply every letter in the word as a separate command
         
-        if read_comm == 'resize':
+        if resize_flag == True:
             try:
-                new_size = int(input('\n       New size: '))
-                width = new_size
-                height = new_size
+                width = int(read_comm)
+                height = int(read_comm)
+                resize_flag = False
                 break
-            except ValueError:
-                print('<- Back')
-                break
+            except ValueError,TypeError:
+                resize_flag = False
+                #do not break because it's probably another command (and is set up
+                #to handle it if it's not)
+        if save_flag == True:
+            save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode,read_comm)
+            save_flag = False
+            break
+        if read_comm == 'resize' or read_comm == 'size':
+            resize_flag = True
             
+            break
+        
+                
         if read_comm == 'quit':
             break
         if read_comm == 'mandelbrot':
@@ -745,6 +950,51 @@ while True:
             w_axis = 0
             sound_list[0].play()
             break
+        if read_comm == 'anim':
+            print('animation')
+            print(anim_counter)
+            if anim_counter == 0:
+                start_keyframe = {
+                "xpos": xpos,
+                "ypos": ypos,
+                "width": width,
+                "height": height,
+                "viewX": viewX,
+                "viewY": viewY,
+                "scale": scale,
+                "z_axis": z_axis,
+                "w_axis": w_axis,
+                "zoom": zoom,
+                "power": power,
+                "c_var_i": c_var_i,
+                "c_var_r": c_var_r,
+                "max_iter": max_iter
+                }
+                anim_counter+=1
+                break
+            elif anim_counter == 1:
+                end_keyframe = {
+                "xpos": xpos,
+                "ypos": ypos,
+                "width": width,
+                "height": height,
+                "viewX": viewX,
+                "viewY": viewY,
+                "scale": scale,
+                "z_axis": z_axis,
+                "w_axis": w_axis,
+                "zoom": zoom,
+                "power": power,
+                "c_var_i": c_var_i,
+                "c_var_r": c_var_r,
+                "max_iter": max_iter
+                }
+                animation_flag = True
+                anim_counter = 0
+                break
+            
+                
+            
         if read_comm == 'trace':
             trace_show = not trace_show
             break
@@ -753,15 +1003,17 @@ while True:
             game_cycle = True
         #Save/load preset features
         if read_comm == 'save':
-            save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode)
+            save_flag = True
+            print
             sound_list[0].play()
             break
         if read_comm == 'load':
-            load_preset()
+            load_flag = True
+            show_presets(message,max_save_slots)
             sound_list[0].play()
             break
         if read_comm == 'delete':
-##NEEDS IMPLEMENTATION
+            delete_flag = True
             break
         if read_comm == 'mute':
             for sound in sound_list:
@@ -801,22 +1053,22 @@ while True:
             elif read_key == 'w':
                 if ticker == 1:
                     sound_list[2].play()
-                viewX+=control_factor*(2*zoom)
+                viewX+=control_factor/(2*zoom)
                 continue
             elif read_key == 's':
                 if ticker == 1:
                     sound_list[2].play()
-                viewX-=control_factor*(2*zoom)
+                viewX-=control_factor/(2*zoom)
                 continue
             elif read_key == 'a':
                 if ticker == 1:
                     sound_list[2].play()
-                viewY-=control_factor*(2*zoom)
+                viewY-=control_factor/(2*zoom)
                 continue
             elif read_key == 'd':
                 if ticker == 1:
                     sound_list[2].play()
-                viewY+=control_factor*(2*zoom)
+                viewY+=control_factor/(2*zoom)
                 continue
             elif read_key == 'v':
                 if ticker == 1:

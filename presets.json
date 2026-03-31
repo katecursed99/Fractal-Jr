@@ -52,5 +52,41 @@
     "c_var_r": 1,
     "max_iter": 100,
     "mode": "mandelbrot"
+  },
+  {
+    "name": "archipelago",
+    "xpos": 0,
+    "ypos": 0,
+    "width": 256,
+    "height": 256,
+    "viewX": 0.5057435524000016,
+    "viewY": 0.4370257903999998,
+    "scale": 1,
+    "z_axis": -1.0699999999999998,
+    "w_axis": 0.6,
+    "zoom": 2.1435888100000016,
+    "power": 1.5999999999999996,
+    "c_var_i": 1.23,
+    "c_var_r": 1.4100000000000004,
+    "max_iter": 100,
+    "mode": "mandelbrot"
+  },
+  {
+    "name": "dogbone",
+    "xpos": 0,
+    "ypos": 0,
+    "width": 256,
+    "height": 256,
+    "viewX": 0,
+    "viewY": 0,
+    "scale": 1,
+    "z_axis": 0,
+    "w_axis": -0.2,
+    "zoom": 1,
+    "power": 2.1,
+    "c_var_i": 0.97015,
+    "c_var_r": 0.10000000000000003,
+    "max_iter": 100,
+    "mode": "julia"
   }
 ]
