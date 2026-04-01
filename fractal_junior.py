@@ -98,26 +98,40 @@ def show_presets(message,max_save_slots):
     with open('presets.json','r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
-        message = 'Presets: '
+        message = 'Presets: \n'
+        i=0
         for diction in data_store:
+            i+=1
             message += diction["name"]+' '
+            if i%3 == 0:
+                message += '\n'
+            if i >= len(data_store) or i >= max_save_slots:
+                message+='\nLoad which file?:'
             if i >= max_save_slots:
+
                 break
+
+    
+ 
+    return message
             
 def delete_preset(user_entry,max_save_slots):
     with open('presets.json','r') as preset_store:
         data_temp = preset_store.read()
-        data_store = json.loads(data_temp)
+    data_store = json.loads(data_temp)
 
         #print(dict(data_store))
-        preset_name = user_entry
-        i=0
-        for diction in data_store:
-            i+=1
-            if i >= max_save_slots:
-                break #So a ridiculously long JSON doesn't brick me
-            if preset_name == diction["name"]:
-                diction.remove()
+    preset_name = user_entry
+    i=0
+    for i,diction in enumerate(data_store):
+        if user_entry == diction["name"]:
+            del data_store[i]
+            with open('presets.json', 'w') as f:
+                json.dump(data_store, f, indent=2)
+            break
+                
+
+    
 
 def load_preset(message,read_comm):
     ##########################
@@ -177,11 +191,11 @@ def is_in_mandelbrot_set(x,y,z_axis,w_axis,zoom,width,height,viewX,viewY,power,m
     #basic check if a point is in the set.
     #returns True or False
     ##########################
-    scale_x = 3.5 / zoom
-    scale_y = 2.0 / zoom
+    scale_x = 3.5 / (width*zoom)
+    scale_y = 3.5 / (height*zoom)
     scale = 3.5 / (width*zoom)
-    cx = viewX + (x - width/2) * scale
-    cy = viewY + (y - height/2) * scale
+    cx = viewX + (x - width/2) * scale_x
+    cy = viewY + (y - height/2) * scale_y
     cy*=(height/width)
     
     color_ticker=0
@@ -271,12 +285,12 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
         for y in range(height):
             inside=False
             inside_border=False
-            scale_x = 3.5 / zoom
-            scale_y = 2.0 / zoom
+            scale_x = 3.5 / (width*zoom)
+            scale_y = 3.5 / (height*zoom)
             
             #camera controls
-            cx = viewX + (x - width/2) * scale
-            cy = viewY + (y - height/2) * scale
+            cx = viewX + (x - width/2) * scale_x
+            cy = viewY + (y - height/2) * scale_y
             
                 
             cy*=(height/width)
@@ -428,22 +442,37 @@ def draw_to_terminal(frac_matrix_f,width,height,dict_catchers,frac_matrix_s):
         #print(e)
     clrprint('Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3)), clr='red', end=' ')
 
-def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height,cycle,c_ticks):
+def save_screen_surface(border_x,border_y,screen_width,screen_height):
+    if frame > 0:
+        rect_area = pygame.Rect(border_x, border_y, screen_width-border_x*2, screen_height-border_y*2)
+        area_surf = screen.subsurface(rect_area)
+        file_name = "exports/fractal"+str(frame)+".png"
+        pygame.image.save(area_surf, file_name)
+    
+
+def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera):
     ##########################
     #draws to the pygame screen
     ##########################
+
+    
     x_tick = 0
     y_tick = 0
+    scaled_x = screen_height // height
+    scaled_y = screen_height // height
+    border_x = (screen_width - (height*scaled_x)) // 2
+    border_y = (screen_height - (width*scaled_y)) // 2
+    #print(c_ticks)
     for i, e in enumerate(frac_matrix_f):
         
-        row_end = (i + 1)% width == 0
+        row_end = (i + 1)% height == 0
         spill_over = (frac_matrix_s[i])
-        scaled_x = screen_width // width
-        scaled_y = screen_height // height
+
 
         color_hsv = pygame.Color(0) #init color
 
         #Color math
+        
         if cycle == True:
             hue_mod = c_ticks#//10*10
         else:
@@ -458,8 +487,7 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
         #print(color_hue,color_var,color_sat)
         color_hsv.hsva = (color_hue,color_sat,color_var,100)
         
-        border_x = (screen_width - (width*scaled_x)) // 2
-        border_y = (screen_height - (height*scaled_y)) // 2
+
         
         #Generate the pixel
         generated_pixel = pygame.Rect(border_x+x_tick*scaled_x,border_y+y_tick*scaled_y,scaled_x,scaled_y)
@@ -470,6 +498,9 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
         if row_end == True:
             x_tick=0
             y_tick+=1
+
+    if video_camera == True:
+        save_screen_surface(border_x,border_y,screen_width,screen_height)
 
 def cycle_list(input_list):
     ##########################
@@ -633,8 +664,8 @@ def set_up_fractal_environment():
     ##########################
     xpos = 0
     ypos = 0
-    width = 48
-    height = 48
+    width = 240
+    height = 160
     viewX = -0.5
     viewY = 0
     scale = 1
@@ -651,9 +682,9 @@ def set_up_fractal_environment():
     game_cycle = True
     trace_show = True
     dyn_pointer = 'y'
-    dev_mode = True
+    dev_mode = False
     mode = 'mandelbrot'
-    message = 'command:'
+    message = '© MIT LICENSE 2026 Katherina L Jesek'
     start_keyframe = {
                 "xpos": xpos,
                 "ypos": ypos,
@@ -688,7 +719,10 @@ def set_up_fractal_environment():
                 }
     max_save_slots = 32 #arbitrary number essentially, but having a max stops it from
                         #searching forever in an intentionally long JSON file
-
+    #Just a quick hidden swap because I did the original math backwards
+    temp = width
+    width = height
+    height = temp
 
     return xpos, ypos, width, height, viewX, viewY, scale, z_axis, w_axis, zoom, power, c_var_i, c_var_r, c_var, y_constant, max_iter, cycle, game_cycle, trace_show, dyn_pointer, dev_mode, mode, message, max_save_slots, start_keyframe, end_keyframe
 
@@ -764,7 +798,7 @@ def play_cache(anim_cache,frame):
     #slower main function
     ##########################
     #Returns f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s
-    
+    no_frame = False
     
     #Load cache from JSON
     if frame < 1:
@@ -774,14 +808,22 @@ def play_cache(anim_cache,frame):
     #print("Available keys:", anim_cache.keys())
     #print("Looking for:", str(frame))
     #print(anim_cache)
-    diction = anim_cache.get(str(frame))
-    if diction:
-        #print(frame, diction["f_frac_matrix_f"])
-        frame_data = diction
-    
-    
-    return frame_data["f_frac_matrix_f"],frame_data["f_width"],frame_data["f_height"],frame_data["f_dict_catchers"],frame_data["f_frac_matrix_s"],anim_cache
-    
+    while True:
+        if no_frame == False:
+            diction = anim_cache.get(str(frame))
+        else:
+            diction = anim_cache.get(str(1))
+        if diction:
+            #print(frame, diction["f_frac_matrix_f"])
+            frame_data = diction
+        
+        try:
+            return frame_data["f_frac_matrix_f"],frame_data["f_width"],frame_data["f_height"],frame_data["f_dict_catchers"],frame_data["f_frac_matrix_s"],anim_cache
+            no_frame = False
+        except UnboundLocalError:
+            print('Unable to find frame '+str(frame))
+            no_frame = True
+            continue
     
 #---------Global variables-------#
 
@@ -866,17 +908,18 @@ for dicti in dict_catchers:
     
 #------------------------------#
 
-anim_length = 25
-anim_loops_max = 5
+anim_length = 300
+anim_loops_max = 1
 anim_current_loop = 0
+video_camera = False
 
 frame=0
 my_font = pygame.font.Font('assets/LineBeam.ttf', 25)
-draw_title(ascii_colors,20)
+#draw_title(ascii_colors,20)
 screen_width = 640
 screen_height = 480
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
-FPS = 30
+FPS = 60
 refresh_every = 1
 clock = pygame.time.Clock()
 animation_flag = False
@@ -887,9 +930,12 @@ delete_flag = False
 play_animation_flag = False
 anim_counter = 0
 anim_cache = {}
-
+c_ticks = 0
 fake_terminal = "" #this is the onscreen terminal in the pygame window
+
+anim_length += 2
 while True:
+    
     #This lil code is so disgusting but it's just grabbing data from mandelbrot_set
     #and passing it over to draw_to_terminal in the following line
     if animation_flag != True:
@@ -897,35 +943,42 @@ while True:
     #draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
     #draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
     #"Game loop" logic for color cycling
-    c_ticks = 0
     
+    if c_ticks >= 60:
+        message = "Command:"
+    if delete_flag == True:
+        message = show_presets(message,max_save_slots)
+    if save_flag == True:
+        message = "Save as:"
+    if load_flag == True:
+        message = show_presets(message,max_save_slots)
     while game_cycle == True:
         
         if animation_flag == True:
             if play_animation_flag == True:
                 f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,anim_cache = play_cache(anim_cache,frame)
-                
+                video_camera = True
                 #print(anim_current_loop)
                 #print(anim_loops_max)
                 if frame >= anim_length-1:
                     anim_current_loop += 1
-                    frame = 0
-##to fix: loops forever on cache playback                
+                    frame = 0               
                     if anim_current_loop >= anim_loops_max:
                         anim_current_loop = 0
                         animation_flag = False
                         play_animation_flag = False
-                        
+                        video_camera = False
                         read_comm = ''
                         break
             else:
                 f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter)
                 cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,anim_cache)
             screen.fill((0,0,0))
-            draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks)
+            draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera)
             
             terminal_screen = my_font.render(message+' '+fake_terminal, False, (200, 200, 200))
-            screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
+            if play_animation_flag == False:
+                screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
             #if c_ticks % refresh_every == 0:
             #refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
             clock.tick(FPS)
@@ -947,7 +1000,8 @@ while True:
         #Keyboard triggers
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    cycle = not cycle
+                    #cycle = not cycle
+                    
                     game_cycle = not game_cycle
                     fake_terminal = "" #clear fake terminal
                 if event.key == pygame.K_RETURN:
@@ -967,7 +1021,7 @@ while True:
         terminal_screen = my_font.render(message+' '+fake_terminal, False, (250, 250, 250))
         
         screen.fill((0,0,0))
-        draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks)
+        draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera)
         
         
         screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
@@ -1024,9 +1078,13 @@ while True:
 
         if delete_flag == True:
             delete_preset(read_comm,max_save_slots)
+            delete_flag = False
             break
         if load_flag == True:
-            load_preset(message,read_comm,max_save_slots)
+            show_presets(message,max_save_slots)
+            
+            load_preset(message,read_comm)
+            load_flag = False
             break
         if read_comm == 'help':
             print('\n       Enter commands, then hit enter to run!                           ')
@@ -1055,7 +1113,7 @@ while True:
                 #do not break because it's probably another command (and is set up
                 #to handle it if it's not)
         if save_flag == True:
-            save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode,read_comm)
+            save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode,read_comm,max_save_slots)
             save_flag = False
             break
         if read_comm == 'resize' or read_comm == 'size':
