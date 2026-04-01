@@ -208,8 +208,8 @@ def is_in_mandelbrot_set(x,y,z_axis,w_axis,zoom,width,height,viewX,viewY,power,m
     #basic check if a point is in the set.
     #returns True or False
     ##########################
-    scale_x = (screen_width/width+screen_height/height)/2 / (width*zoom)
-    scale_y = (screen_width/width+screen_height/height)/2 / (height*zoom)
+    scale_x = (screen_width/width+screen_height/height)/2 / (screen_height*zoom)
+    scale_y = (screen_width/width+screen_height/height)/2 / (screen_width*zoom)
     scale = 3.5 / (width*zoom)
     cx = viewX + (x - width/2) * scale_x
     cy = viewY + (y - height/2) * scale_y
@@ -302,8 +302,8 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
         for y in range(height):
             inside=False
             inside_border=False
-            scale_x = (screen_width/width+screen_height/height)/2 / (width*zoom)
-            scale_y = (screen_width/width+screen_height/height)/2 / (height*zoom)
+            scale_x = (screen_width/width+screen_height/height)/2 / (screen_height*zoom)
+            scale_y = (screen_width/width+screen_height/height)/2 / (screen_width*zoom)
             
             #camera controls
             cx = viewX + (x - width/2) * scale_x
