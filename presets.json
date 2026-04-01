@@ -1,23 +1,5 @@
 [
   {
-    "name": "default",
-    "xpos": 0,
-    "ypos": 0,
-    "width": 32,
-    "height": 32,
-    "viewX": -0.5,
-    "viewY": 0,
-    "scale": 1,
-    "z_axis": 0,
-    "w_axis": 0,
-    "zoom": 1,
-    "power": 2.0,
-    "c_var_i": 0,
-    "c_var_r": 1,
-    "max_iter": 100,
-    "mode": "mandelbrot"
-  },
-  {
     "name": "caterpillar",
     "xpos": 0,
     "ypos": 0,

@@ -43,7 +43,7 @@ import os
 import time
 import json
 import pygame
-import threading
+#import threading
 from clrprint import *
 import numpy as np
 
@@ -88,25 +88,32 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
 
     if len(data) >= max_save_slots:
         print('Need to delete a preset to make room!')
+        sound_list[4].play()
     else:
+        sound_list[3].play()
         data.append(save_data)
 
     with open('presets.json', 'w') as f:
         json.dump(data, f, indent=2)
 
 def show_presets(message,max_save_slots):
+    ##########################
+    #pulls in presets from the JSON and displays them all to the "message"
+    #screen (which prints to the pygame window)
+    ##########################
     with open('presets.json','r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         message = 'Presets: \n'
         i=0
+        sound_list[3].play()
         for diction in data_store:
             i+=1
             message += diction["name"]+' '
             if i%3 == 0:
                 message += '\n'
             if i >= len(data_store) or i >= max_save_slots:
-                message+='\nLoad which file?:'
+                message+='\nWhich file?:'
             if i >= max_save_slots:
 
                 break
@@ -116,6 +123,10 @@ def show_presets(message,max_save_slots):
     return message
             
 def delete_preset(user_entry,max_save_slots):
+    ##########################
+    #pulls in presets from the JSON and attempts to delete one by matching
+    #the read_comm (aka the word the user gave as command) to the preset_name
+    ##########################
     with open('presets.json','r') as preset_store:
         data_temp = preset_store.read()
     data_store = json.loads(data_temp)
@@ -125,9 +136,13 @@ def delete_preset(user_entry,max_save_slots):
     i=0
     for i,diction in enumerate(data_store):
         if user_entry == diction["name"]:
+            sound_list[3].play()
             del data_store[i]
             with open('presets.json', 'w') as f:
                 json.dump(data_store, f, indent=2)
+            break
+        if i >= max_save_slots or i>= len(data_store):
+            sound_list[4].play()
             break
                 
 
@@ -135,8 +150,8 @@ def delete_preset(user_entry,max_save_slots):
 
 def load_preset(message,read_comm):
     ##########################
-    #pulls in presets from the JSON and lists them out, then asks for one to
-    #load and finally loads it
+    #pulls in presets from the JSON and attempts to load one by matching
+    #the read_comm (aka the word the user gave as command) to the preset_name
     ##########################
     max_save_slots = 32 #arbitrary number essentially, but having a max stops it from
                         #searching forever in an intentionally long JSON file
@@ -146,7 +161,7 @@ def load_preset(message,read_comm):
     with open('presets.json','r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
-
+        
         #print(dict(data_store))
         preset_name = read_comm
         i=0
@@ -170,8 +185,10 @@ def load_preset(message,read_comm):
                 c_var_r = diction["c_var_r"]
                 max_iter = diction["max_iter"]
                 mode = diction["mode"]
+                sound_list[3].play()
                 break
             if i>=len(data_store) or i >= max_save_slots:
+                sound_list[4].play()
                 break
                 
 def apply_mods(mode,cx,cy,z_axis,w_axis,c_var_r,c_var_i):
@@ -191,8 +208,8 @@ def is_in_mandelbrot_set(x,y,z_axis,w_axis,zoom,width,height,viewX,viewY,power,m
     #basic check if a point is in the set.
     #returns True or False
     ##########################
-    scale_x = 3.5 / (width*zoom)
-    scale_y = 3.5 / (height*zoom)
+    scale_x = (screen_width/width+screen_height/height)/2 / (width*zoom)
+    scale_y = (screen_width/width+screen_height/height)/2 / (height*zoom)
     scale = 3.5 / (width*zoom)
     cx = viewX + (x - width/2) * scale_x
     cy = viewY + (y - height/2) * scale_y
@@ -285,8 +302,8 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
         for y in range(height):
             inside=False
             inside_border=False
-            scale_x = 3.5 / (width*zoom)
-            scale_y = 3.5 / (height*zoom)
+            scale_x = (screen_width/width+screen_height/height)/2 / (width*zoom)
+            scale_y = (screen_width/width+screen_height/height)/2 / (height*zoom)
             
             #camera controls
             cx = viewX + (x - width/2) * scale_x
@@ -341,22 +358,29 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
 
             #Uses the variables from earlier in the function to decide the color
             fill_color = 1 #default color
+            spill_over = 0
             if inside==True:
-                if inside_border==True:
-                    if trace_show == True:
-                        fill_color = 4
-                    else:
-                        fill_color = len(dict_catchers)
+                if inside_border==True and trace_show == True:
+                    fill_color = 4
                     color_ticker = max_iter
+                    spill_over = 140
+
+                    
+                    
+                        
+                    
+                    
                 else:
                     fill_color = len(dict_catchers)
-                color_ticker = max_iter
-            spill_over = 0
+                #color_ticker = max_iter
+            
             
             for dict_ent in dict_catchers:
                 if color_ticker <= dict_ent['thresh']:
                     fill_color = dict_ent['id']
-                    spill_over = color_ticker - dict_ent['thresh']
+                    if spill_over < 100:
+                    
+                        spill_over = color_ticker - dict_ent['thresh']
                     
                     break
             
@@ -443,6 +467,9 @@ def draw_to_terminal(frac_matrix_f,width,height,dict_catchers,frac_matrix_s):
     clrprint('Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3)), clr='red', end=' ')
 
 def save_screen_surface(border_x,border_y,screen_width,screen_height):
+    if border_x < 0:
+        border_x = 0
+        
     if frame > 0:
         rect_area = pygame.Rect(border_x, border_y, screen_width-border_x*2, screen_height-border_y*2)
         area_surf = screen.subsurface(rect_area)
@@ -458,10 +485,10 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
     
     x_tick = 0
     y_tick = 0
-    scaled_x = screen_height // height
-    scaled_y = screen_height // height
-    border_x = (screen_width - (height*scaled_x)) // 2
-    border_y = (screen_height - (width*scaled_y)) // 2
+    scaled_x = max(screen_height // width, screen_height // height)
+    scaled_y = max(screen_height // width, screen_height // height)
+    border_x = (screen_width - (height*scaled_x)) / 2
+    border_y = (screen_height - (width*scaled_y)) / 2
     #print(c_ticks)
     for i, e in enumerate(frac_matrix_f):
         
@@ -479,10 +506,15 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
             hue_mod = 0
         color_stops = len(dict_catchers)
         color_hue = int(round((360/color_stops*e)+(frac_matrix_s[i]*10)+hue_mod)%360)
-        color_sat = 80
+        if frac_matrix_s[i] < 100:
+            color_sat = 80
+            color_var = int(round((frac_matrix_s[i] * 10)%100))
+        else:
+            color_sat = 0
+            color_var = 100
         
         
-        color_var = int(round((frac_matrix_s[i] * 10)%100))
+        
 
         #print(color_hue,color_var,color_sat)
         color_hsv.hsva = (color_hue,color_sat,color_var,100)
@@ -680,11 +712,11 @@ def set_up_fractal_environment():
     max_iter = 100
     cycle = True
     game_cycle = True
-    trace_show = True
+    trace_show = False
     dyn_pointer = 'y'
     dev_mode = False
     mode = 'mandelbrot'
-    message = '© MIT LICENSE 2026 Katherina L Jesek'
+    message = 'hi <3 type help or enter a command'
     start_keyframe = {
                 "xpos": xpos,
                 "ypos": ypos,
@@ -837,8 +869,13 @@ xpos, ypos, width, height, viewX, viewY, scale, z_axis, w_axis, zoom, power, c_v
 
 pygame.mixer.init() 
 pygame.init()
+pygame.display.set_caption("Fractal Jr. - A Fractal Explorer")
 
-sound_list = [pygame.mixer.Sound('assets/magic.wav'),pygame.mixer.Sound('assets/blip.wav'),pygame.mixer.Sound('assets/dissonant.wav')]
+sound_list = [pygame.mixer.Sound('assets/magic.wav'),pygame.mixer.Sound('assets/blip.wav'),pygame.mixer.Sound('assets/dissonant.wav'),pygame.mixer.Sound('assets/yes.wav'),pygame.mixer.Sound('assets/no.wav')]
+for snd in sound_list:
+    snd.set_volume(0.4)
+sound_list[3].set_volume(0.05)
+sound_list[4].set_volume(0.05)
 pygame.mixer.music.load('assets/music.mp3')
 pygame.mixer.music.play(-1)
 sound_list[0].play()
@@ -846,14 +883,14 @@ sound_list[0].play()
 
 
 
-ascii_density = list('░▒▓█') #.:-=+*#%@
+ascii_density = list('░▒▓█.:-=+*#%@') #.:-=+*#%@
 ascii_density.reverse()
 ascii_colors = ["white", "red", "yellow", "green", "blue", "purple", "pink" ]
 
 
-dict_catchers = [{
-        "id":1,
-        "catcher":[],
+dict_catchers = [{ #These are mostly a remnant of the ASCII-in-terminal
+        "id":1,    #version on first glance but they're load-bearing
+        "catcher":[], #for the color math so it's easier to just leave them
         "flag":False,
         "color":'black',
         "thresh":3
@@ -908,30 +945,41 @@ for dicti in dict_catchers:
     
 #------------------------------#
 
-anim_length = 300
+anim_seconds = 30
+
 anim_loops_max = 1
 anim_current_loop = 0
 video_camera = False
 
+
+
+
 frame=0
-my_font = pygame.font.Font('assets/LineBeam.ttf', 25)
+
 #draw_title(ascii_colors,20)
 screen_width = 640
 screen_height = 480
+my_font = pygame.font.Font('assets/LineBeam.ttf', screen_width//32)
+title_font = pygame.font.Font('assets/LineBeam.ttf', screen_width//20)
+credit_font = pygame.font.Font('assets/LineBeam.ttf', screen_width//28)
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
-FPS = 60
+FPS = 30
 refresh_every = 1
 clock = pygame.time.Clock()
 animation_flag = False
+animL_flag = False
 resize_flag = False
 load_flag = False
 save_flag = False
 delete_flag = False
+help_flag = False
 play_animation_flag = False
 anim_counter = 0
 anim_cache = {}
 c_ticks = 0
 fake_terminal = "" #this is the onscreen terminal in the pygame window
+help_message = 'enter commands, then hit enter to run!\nCapital letters are 10x lowercase.\n\nWASD = x,y axes | X<->Z = zoom | V<->F = Z-axis | \nG<->B = kata/ana | N<->H = power \nM<->J = c-factor (real) | I<->K = c-factor (imaginary)\n\nSome only apply to one mode or the other\n\nKeywords: mandelbrot, julia, resize, help, \nsave, load, delete, quit, anim, cancel, play, \nmute, trace'
+anim_length = anim_seconds*FPS
 
 anim_length += 2
 while True:
@@ -945,13 +993,19 @@ while True:
     #"Game loop" logic for color cycling
     
     if c_ticks >= 60:
-        message = "Command:"
+        message = "command:"
     if delete_flag == True:
         message = show_presets(message,max_save_slots)
     if save_flag == True:
-        message = "Save as:"
+        message = "save as:"
     if load_flag == True:
         message = show_presets(message,max_save_slots)
+    if help_flag == True:
+        message = help_message
+    if animL_flag == True:
+        message = 'anim length in seconds:'
+    if resize_flag == True:
+        message = 'new height in pixels:'
     while game_cycle == True:
         
         if animation_flag == True:
@@ -971,12 +1025,13 @@ while True:
                         read_comm = ''
                         break
             else:
+                
                 f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter)
                 cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,anim_cache)
             screen.fill((0,0,0))
             draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera)
             
-            terminal_screen = my_font.render(message+' '+fake_terminal, False, (200, 200, 200))
+            terminal_screen = my_font.render('Frame: '+str(frame)+' of '+str(anim_length)+fake_terminal, False, (200, 200, 200))
             if play_animation_flag == False:
                 screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
             #if c_ticks % refresh_every == 0:
@@ -996,14 +1051,17 @@ while True:
         #Resize screen
             if event.type == pygame.VIDEORESIZE:
                 screen_width, screen_height = event.w, event.h
+                aspect = height/width
+                screen_width = aspect*screen_height
                 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
         #Keyboard triggers
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    #cycle = not cycle
-                    
-                    game_cycle = not game_cycle
+                    read_comm = 'quit'
+                    enter = True
+                    #game_cycle = not game_cycle
                     fake_terminal = "" #clear fake terminal
+                    game_cycle = not game_cycle
                 if event.key == pygame.K_RETURN:
                     read_comm = fake_terminal
                     fake_terminal = "" #clear
@@ -1019,11 +1077,13 @@ while True:
 
                 
         terminal_screen = my_font.render(message+' '+fake_terminal, False, (250, 250, 250))
-        
+        title = title_font.render("Fractal Jr.", False, (250, 250, 250))
+        credit = credit_font.render("© 2026 Kate the Cursed", False, (250, 250, 250))
         screen.fill((0,0,0))
         draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera)
-        
-        
+        if c_ticks <= 90:
+            screen.blit(title, (screen_width//13,screen_height//34*13))
+            screen.blit(credit, (screen_width//13,screen_height//34*21))
         screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
         #if c_ticks % refresh_every == 0:
             #refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
@@ -1086,7 +1146,10 @@ while True:
             load_preset(message,read_comm)
             load_flag = False
             break
+        if help_flag == True and read_comm != 'help':
+            help_flag = False
         if read_comm == 'help':
+            help_flag = True
             print('\n       Enter commands, then hit enter to run!                           ')
             print('       W +              -   +          -   +            -   +         ')
             print('     A<->D = x,y axes | X<->Z = zoom | V<->F = Z-axis | G<->B = kata/ana')
@@ -1104,24 +1167,40 @@ while True:
         
         if resize_flag == True:
             try:
-                width = int(read_comm)
+                aspect = height/width
                 height = int(read_comm)
+                width = int(height/aspect)
+                sound_list[3].play()
                 resize_flag = False
                 break
             except ValueError,TypeError:
                 resize_flag = False
                 #do not break because it's probably another command (and is set up
                 #to handle it if it's not)
+        if animL_flag == True:
+            try:
+                anim_length = int(read_comm*FPS)
+                animL_flag = False
+                break
+            except ValueError,TypeError:
+                animL_flag = False
+                #No break
         if save_flag == True:
             save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode,read_comm,max_save_slots)
             save_flag = False
             break
         if read_comm == 'resize' or read_comm == 'size':
             resize_flag = True
-            
+            sound_list[3].play()
             break
         
-                
+        if read_comm == 'animl': #animation length. for some reason this
+                                #creates an infinite loop, but it's just
+                                #a QoL feature so it can be tracked down
+                                #later
+            #animL_flag = True
+            #sound_list[3].play()
+            break
         if read_comm == 'quit':
             break
         if read_comm == 'mandelbrot':
@@ -1191,6 +1270,7 @@ while True:
                 "max_iter": max_iter
                 }
                 anim_counter+=1
+                sound_list[3].play()
                 break
             elif anim_counter == 1:
                 end_keyframe = {
@@ -1213,31 +1293,40 @@ while True:
                 play_animation_flag = False
                 frame = 0
                 anim_current_loop = 0
+                read_comm = ''
                 anim_counter = 0
+                sound_list[3].play()
                 break
+        if read_comm == 'cancel':
+            anim_counter = 0
+            animation_flag = False
+            sound_list[4].play()
+            break
         if read_comm == 'play':
             play_animation_flag = True
             animation_flag = True
             frame = 0
+            sound_list[0].play()
             break
                 
             
         if read_comm == 'trace':
             trace_show = not trace_show
+            sound_list[3].play()
             break
         if read_comm == 'cycle':
-            cycle = True
-            game_cycle = True
+            cycle = not cycle
+            #game_cycle = True
+            break
         #Save/load preset features
         if read_comm == 'save':
             save_flag = True
-            print
-            sound_list[0].play()
+            
             break
         if read_comm == 'load':
             load_flag = True
             show_presets(message,max_save_slots)
-            sound_list[0].play()
+            
             break
         if read_comm == 'delete':
             delete_flag = True
@@ -1245,6 +1334,7 @@ while True:
         if read_comm == 'mute':
             for sound in sound_list:
                 sound.set_volume(0)
+            pygame.mixer.music.stop()
         ticker=0
         for read_key in list(read_comm):
             control_factor = 0.01
@@ -1280,22 +1370,22 @@ while True:
             elif read_key == 'w':
                 if ticker == 1:
                     sound_list[2].play()
-                viewX+=control_factor/(2*zoom)
+                viewX+=control_factor/(zoom*0.5)
                 continue
             elif read_key == 's':
                 if ticker == 1:
                     sound_list[2].play()
-                viewX-=control_factor/(2*zoom)
+                viewX-=control_factor/(zoom*0.5)
                 continue
             elif read_key == 'a':
                 if ticker == 1:
                     sound_list[2].play()
-                viewY-=control_factor/(2*zoom)
+                viewY-=control_factor/(zoom*0.5)
                 continue
             elif read_key == 'd':
                 if ticker == 1:
                     sound_list[2].play()
-                viewY+=control_factor/(2*zoom)
+                viewY+=control_factor/(zoom*0.5)
                 continue
             elif read_key == 'v':
                 if ticker == 1:
@@ -1357,6 +1447,10 @@ while True:
 
     if read_comm == 'quit':
         print('Have a lovely day <3')
+        screen.fill((0,0,0))
+        terminal_screen = my_font.render("have a lovely day <3", False, (200, 200, 200))
+        screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
+        pygame.display.flip()
         time.sleep(2)
         sys.exit(0)
         break
@@ -1365,7 +1459,7 @@ while True:
         continue
         
 time.sleep(0.05)
-draw_to_terminal(mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter))
+#draw_to_terminal(mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter))
 
 
 
