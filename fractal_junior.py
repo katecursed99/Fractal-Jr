@@ -44,7 +44,7 @@ import time
 import json
 import pygame
 #import threading
-from clrprint import *
+#from clrprint import *
 import numpy as np
 
 
@@ -208,8 +208,8 @@ def is_in_mandelbrot_set(x,y,z_axis,w_axis,zoom,width,height,viewX,viewY,power,m
     #basic check if a point is in the set.
     #returns True or False
     ##########################
-    scale_x = (screen_width/width+screen_height/height)/2 / (width*zoom)
-    scale_y = (screen_width/width+screen_height/height)/2 / (height*zoom)
+    scale_x = (screen_width/width+screen_height/height)/2 / (screen_height*zoom)
+    scale_y = (screen_width/width+screen_height/height)/2 / (screen_width*zoom)
     scale = 3.5 / (width*zoom)
     cx = viewX + (x - width/2) * scale_x
     cy = viewY + (y - height/2) * scale_y
@@ -302,8 +302,8 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
         for y in range(height):
             inside=False
             inside_border=False
-            scale_x = (screen_width/width+screen_height/height)/2 / (width*zoom)
-            scale_y = (screen_width/width+screen_height/height)/2 / (height*zoom)
+            scale_x = (screen_width/width+screen_height/height)/2 / (screen_height*zoom)
+            scale_y = (screen_width/width+screen_height/height)/2 / (screen_width*zoom)
             
             #camera controls
             cx = viewX + (x - width/2) * scale_x
@@ -415,56 +415,6 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
     
 
 
-def draw_to_terminal(frac_matrix_f,width,height,dict_catchers,frac_matrix_s):
-    ##########################
-    #Draws the data returned from mandelbrot_set to the terminal using
-    #terminal and clrprint
-    #Variable number of buckets, in dict_catchers. When one starts being filled, the
-    #other dumps to the terminal
-    ##########################
-    os.system('cls' if os.name == 'nt' else 'clear')
-    counter = 0
-    print('\n       ',end='')
-    
-    
-    
-    #Loop for each pixel
-    for i, e in enumerate(frac_matrix_f):
-        row_end = (i + 1)% width == 0
-        spill_over = (frac_matrix_s[i])%len(ascii_density)
-        if spill_over > len(ascii_density):
-            spill_over = 0
-        for dict_ent in dict_catchers:
-            
-            if e == dict_ent['id']:
-                if not dict_ent['flag']:
-                    for dict_ent_2 in dict_catchers:
-                        if dict_ent_2['catcher']:
-    
-                            clrprint(''.join(dict_ent_2['catcher']), clr=dict_ent_2['color'], end='')
-                            dict_ent_2['catcher'] = []
-                            dict_ent_2['flag'] = False
-        
-                    dict_ent['flag'] = True
-                dict_ent['catcher'].append(ascii_density[spill_over]+ascii_density[spill_over]) #+ ('\n       ' if row_end else ''))
-        if row_end:
-            for dict_ent in dict_catchers:
-                if dict_ent['catcher']:
-                    clrprint(''.join(dict_ent['catcher']),
-                             clr=dict_ent['color'],
-                             end='')
-                    dict_ent['catcher'] = []
-                dict_ent['flag'] = False
-            print('\n       ',end='')
-    # flush remaining
-    for dict_ent in dict_catchers:
-        if dict_ent['catcher']:
-            
-            clrprint(''.join(dict_ent['catcher']), clr=dict_ent['color'], end='')
-   
-            dict_ent['catcher'] = []
-        #print(e)
-    clrprint('Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3)), clr='red', end=' ')
 
 def save_screen_surface(border_x,border_y,screen_width,screen_height):
     if border_x < 0:
@@ -649,44 +599,7 @@ def cycle_fractal_colors(dict_catchers,ascii_colors):
         col_index = catcher["id"] % len(ascii_colors)
         catcher["color"] = ascii_colors[col_index]
     
-def draw_title(ascii_color,loops):
-    ##########################
-    #ASCII logo for the terminal
-    #
-    ##########################
-    i=0
-    if dev_mode == False:
-        while i <= loops:
-            time.sleep(0.08)
-            os.system('cls' if os.name == 'nt' else 'clear')
-            clrprint(' ______   ______     ______     ______     ______   ______     __         ', clr=ascii_color[1])
-            clrprint('/\\  ___\\ /\\  == \\   /\\  __ \\   /\\  ___\\   /\\__  _\\ /\\  __ \\   /\\ \\        ', clr=ascii_color[1])
-            clrprint('\\ \\  __\\ \\ \\  __<   \\ \\  __ \\  \\ \\ \\____  \\/_/\\ \\/ \\ \\  __ \\  \\ \\ \\____   ', clr=ascii_color[2])
-            clrprint(' \\ \\_\\    \\ \\_\\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\    \\ \\_\\  \\ \\_\\ \\_\\  \\ \\_____\\  ', clr=ascii_color[3])
-            clrprint('  \\/_/     \\/_/ /_/   \\/_/\\/_/   \\/_____/     \\/_/   \\/_/\\/_/   \\/_____/  ', clr=ascii_color[4])
-            clrprint('                                                                          ', clr=ascii_color[3])
-            clrprint('                                                         __     ______    ', clr=ascii_color[5])
-            clrprint('                                                        /\\ \\   /\\  == \\   ', clr=ascii_color[5])
-            clrprint('                                                       _\\_\\ \\  \\ \\  __<   ', clr=ascii_color[6])
-            clrprint('                                                      /\\_____\\  \\ \\_\\ \\_\\ ', clr=ascii_color[0])
-            clrprint('                                                      \\/_____/   \\/_/ /_/ ', clr=ascii_color[1])
-            clrprint('                                                                          ', clr=ascii_color[0])
-            if i >= loops//3:
-                clrprint('      © Katherina L Jesek               2026                MIT License',clr='red')
-            else:
-                print('')
-            if i >= loops//3*2:
-                clrprint('      type help and hit enter for info on commands!  ',clr='yellow')
-            else:
-                print('')
-            #os.system('cls' if os.name == 'nt' else 'clear')
 
-            i+=1
-        cycle_list(ascii_colors)
-        if i != loops:
-            print('')
-    clrprint('      loading fractal . . .')
-    time.sleep(2)
 
 
 def set_up_fractal_environment():
@@ -776,7 +689,10 @@ def play_animation(start_keyframe,end_keyframe,frame,anim_length):
     key_traits = ["xpos","ypos","width","height","viewX","viewY","scale","z_axis",
                   "w_axis","zoom","power","c_var_i","c_var_r","max_iter"]
     for trait in key_traits:
-        new_keyframe[trait] = keyframe_formula(start_keyframe,end_keyframe,trait,normal_time)
+        if trait == "zoom":
+            new_keyframe[trait] = keyframe_formula_2(start_keyframe,end_keyframe,trait,normal_time)
+        else:
+            new_keyframe[trait] = keyframe_formula(start_keyframe,end_keyframe,trait,normal_time)
    
     return new_keyframe
 
@@ -787,6 +703,19 @@ def keyframe_formula(start_keyframe,end_keyframe,entry_name,normal_time):
     #
     ##########################
     return start_keyframe[entry_name]+(end_keyframe[entry_name]-start_keyframe[entry_name])*normal_time
+def ease_out(t):
+    return 1 - (1 - t) ** 2
+def keyframe_formula_2(start_keyframe,end_keyframe,entry_name,normal_time):
+    ##########################
+    #Zoom is weird and needs a different slope for its
+    #keyframe formula. Currently testing: exponential
+    #
+    ##########################
+  
+    t= ease_out(normal_time)
+    return start_keyframe[entry_name]+(end_keyframe[entry_name]-start_keyframe[entry_name])**t
+
+    
 
 def cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,anim_cache):
     ##########################
@@ -945,7 +874,7 @@ for dicti in dict_catchers:
     
 #------------------------------#
 
-anim_seconds = 30
+anim_seconds = 10
 
 anim_loops_max = 1
 anim_current_loop = 0
@@ -980,6 +909,8 @@ c_ticks = 0
 fake_terminal = "" #this is the onscreen terminal in the pygame window
 help_message = 'enter commands, then hit enter to run!\nCapital letters are 10x lowercase.\n\nWASD = x,y axes | X<->Z = zoom | V<->F = Z-axis | \nG<->B = kata/ana | N<->H = power \nM<->J = c-factor (real) | I<->K = c-factor (imaginary)\n\nSome only apply to one mode or the other\n\nKeywords: mandelbrot, julia, resize, help, \nsave, load, delete, quit, anim, cancel, play, \nmute, trace'
 anim_length = anim_seconds*FPS
+
+
 
 anim_length += 2
 while True:
@@ -1158,7 +1089,7 @@ while True:
             print('     You can issue multiple 1-char commands per entry to be more efficient')
             print('       Capital letters have the same function but are 10x as powerful')
             print('     Keyword commands: mandelbrot, julia, resize, help, save, load, quit')
-            clrprint('\n       command:',clr='white',end='')
+
             break
 
         #This is where all the possible text commands live
