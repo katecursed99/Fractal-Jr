@@ -1,0 +1,85 @@
+{
+ "version": "auto-py-to-exe-configuration_v1",
+ "pyinstallerOptions": [
+  {
+   "optionDest": "noconfirm",
+   "value": true
+  },
+  {
+   "optionDest": "filenames",
+   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/fractal_junior.py"
+  },
+  {
+   "optionDest": "onefile",
+   "value": false
+  },
+  {
+   "optionDest": "console",
+   "value": false
+  },
+  {
+   "optionDest": "icon_file",
+   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/fractal.ico"
+  },
+  {
+   "optionDest": "name",
+   "value": "FractalJr"
+  },
+  {
+   "optionDest": "clean_build",
+   "value": true
+  },
+  {
+   "optionDest": "strip",
+   "value": false
+  },
+  {
+   "optionDest": "noupx",
+   "value": false
+  },
+  {
+   "optionDest": "disable_windowed_traceback",
+   "value": false
+  },
+  {
+   "optionDest": "uac_admin",
+   "value": false
+  },
+  {
+   "optionDest": "uac_uiaccess",
+   "value": false
+  },
+  {
+   "optionDest": "argv_emulation",
+   "value": false
+  },
+  {
+   "optionDest": "bundle_identifier",
+   "value": "com.katethecursed.fractaljr"
+  },
+  {
+   "optionDest": "target_arch",
+   "value": "arm64"
+  },
+  {
+   "optionDest": "bootloader_ignore_signals",
+   "value": false
+  },
+  {
+   "optionDest": "datas",
+   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/src:src/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/assets:assets/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/exports:exports/"
+  }
+ ],
+ "nonPyinstallerOptions": {
+  "increaseRecursionLimit": true,
+  "manualArguments": ""
+ }
+}

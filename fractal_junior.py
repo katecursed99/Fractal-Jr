@@ -47,10 +47,13 @@ import pygame
 #from clrprint import *
 import numpy as np
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
 
-
-
-
+    return os.path.join(base_path, relative_path)
 
 
 def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode,read_comm,max_save_slots):
@@ -80,8 +83,8 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
     
     save_data["name"] = read_comm
     
-    if os.path.exists('presets.json'):
-        with open('presets.json', 'r') as f:
+    if os.path.exists(resource_path('presets.json')):
+        with open(resource_path('presets.json'), 'r') as f:
             data = json.load(f)
     else:
         data = []
@@ -93,7 +96,7 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
         sound_list[3].play()
         data.append(save_data)
 
-    with open('presets.json', 'w') as f:
+    with open(resource_path('presets.json'), 'w') as f:
         json.dump(data, f, indent=2)
 
 def show_presets(message,max_save_slots):
@@ -101,7 +104,7 @@ def show_presets(message,max_save_slots):
     #pulls in presets from the JSON and displays them all to the "message"
     #screen (which prints to the pygame window)
     ##########################
-    with open('presets.json','r') as preset_store:
+    with open(resource_path('presets.json'),'r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         message = 'Presets: \n'
@@ -127,7 +130,7 @@ def delete_preset(user_entry,max_save_slots):
     #pulls in presets from the JSON and attempts to delete one by matching
     #the read_comm (aka the word the user gave as command) to the preset_name
     ##########################
-    with open('presets.json','r') as preset_store:
+    with open(resource_path('presets.json'),'r') as preset_store:
         data_temp = preset_store.read()
     data_store = json.loads(data_temp)
 
@@ -138,7 +141,7 @@ def delete_preset(user_entry,max_save_slots):
         if user_entry == diction["name"]:
             sound_list[3].play()
             del data_store[i]
-            with open('presets.json', 'w') as f:
+            with open(resource_path('presets.json'), 'w') as f:
                 json.dump(data_store, f, indent=2)
             break
         if i >= max_save_slots or i>= len(data_store):
@@ -158,7 +161,7 @@ def load_preset(message,read_comm):
     
     global xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode
 
-    with open('presets.json','r') as preset_store:
+    with open(resource_path('cache.json'),'r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         
@@ -422,10 +425,17 @@ def save_screen_surface(border_x,border_y,screen_width,screen_height):
         
     if frame > 0:
         rect_area = pygame.Rect(border_x, border_y, screen_width-border_x*2, screen_height-border_y*2)
-        area_surf = screen.subsurface(rect_area)
-        file_name = "exports/fractal"+str(frame)+".png"
-        pygame.image.save(area_surf, file_name)
-    
+        area_surf = screen.subsurface(rect_area)       
+
+        folder = os.path.expanduser("~/Desktop/fractal")
+        os.makedirs(folder, exist_ok=True)
+
+        file_path = os.path.join(folder, f"fractal{frame}.png")
+        try:
+            pygame.image.save(area_surf, file_path)
+            print("Saved:", file_path)
+        except Exception as e:
+            print("Save failed:", e) 
 
 def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera):
     ##########################
@@ -749,7 +759,7 @@ def cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_d
         save_cache(anim_cache)
 
 def save_cache(anim_cache):
-    with open('cache.json', 'w') as f:
+    with open(resource_path('cache.json'), 'w') as f:
         json.dump(anim_cache, f, indent=2)
     
 def play_cache(anim_cache,frame):
@@ -763,7 +773,7 @@ def play_cache(anim_cache,frame):
     
     #Load cache from JSON
     if frame < 1:
-        with open('cache.json','r') as cache_file:
+        with open(resource_path('cache.json'),'r') as cache_file:
             data_cache = cache_file.read()
             anim_cache = json.loads(data_cache)
     #print("Available keys:", anim_cache.keys())
@@ -799,13 +809,14 @@ xpos, ypos, width, height, viewX, viewY, scale, z_axis, w_axis, zoom, power, c_v
 pygame.mixer.init() 
 pygame.init()
 pygame.display.set_caption("Fractal Jr. - A Fractal Explorer")
-
-sound_list = [pygame.mixer.Sound('assets/magic.wav'),pygame.mixer.Sound('assets/blip.wav'),pygame.mixer.Sound('assets/dissonant.wav'),pygame.mixer.Sound('assets/yes.wav'),pygame.mixer.Sound('assets/no.wav')]
+icon = pygame.image.load(resource_path("assets/fractal_icon.png"))
+pygame.display.set_icon(icon)
+sound_list = [pygame.mixer.Sound(resource_path('assets/magic.wav')),pygame.mixer.Sound(resource_path('assets/blip.wav')),pygame.mixer.Sound(resource_path('assets/dissonant.wav')),pygame.mixer.Sound(resource_path('assets/yes.wav')),pygame.mixer.Sound(resource_path('assets/no.wav'))]
 for snd in sound_list:
     snd.set_volume(0.4)
 sound_list[3].set_volume(0.05)
 sound_list[4].set_volume(0.05)
-pygame.mixer.music.load('assets/music.mp3')
+pygame.mixer.music.load(resource_path('assets/music.mp3'))
 pygame.mixer.music.play(-1)
 sound_list[0].play()
 
@@ -888,9 +899,9 @@ frame=0
 #draw_title(ascii_colors,20)
 screen_width = 640
 screen_height = 480
-my_font = pygame.font.Font('assets/LineBeam.ttf', screen_width//32)
-title_font = pygame.font.Font('assets/LineBeam.ttf', screen_width//20)
-credit_font = pygame.font.Font('assets/LineBeam.ttf', screen_width//28)
+my_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//32)
+title_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//20)
+credit_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//28)
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
 FPS = 30
 refresh_every = 1
