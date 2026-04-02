@@ -43,8 +43,6 @@ import os
 import time
 import json
 import pygame
-#import threading
-#from clrprint import *
 import numpy as np
 
 def resource_path(relative_path):
@@ -161,7 +159,7 @@ def load_preset(message,read_comm):
     
     global xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode
 
-    with open(resource_path('cache.json'),'r') as preset_store:
+    with open(resource_path('presets.json'),'r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         
