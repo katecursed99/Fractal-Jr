@@ -918,7 +918,7 @@ anim_counter = 0
 anim_cache = {}
 c_ticks = 0
 fake_terminal = "" #this is the onscreen terminal in the pygame window
-help_message = 'enter commands, then hit enter to run!\nCapital letters are 10x lowercase.\n\nWASD = x,y axes | X<->Z = zoom | V<->F = Z-axis | \nG<->B = kata/ana | N<->H = power \nM<->J = c-factor (real) | I<->K = c-factor (imaginary)\n\nSome only apply to one mode or the other\n\nKeywords: mandelbrot, julia, resize, help, \nsave, load, delete, quit, anim, cancel, play, \nmute, trace'
+help_message = 'enter commands, then hit enter to run!\nCapital letters are 10x lowercase.\n\nWASD = x,y axes | X<->Z = zoom | V<->F = Z-axis | \nG<->B = kata/ana | N<->H = power \nM<->J = c-factor (real) | I<->K = c-factor (imaginary)\n\nSome only apply to one mode or the other\n\nKeywords: mandelbrot, julia, resize, help, \nsave, load, delete, quit, anim, cancel, play, \nmute, trace, animl'
 anim_length = anim_seconds*FPS
 
 
@@ -1121,7 +1121,7 @@ while True:
                 #to handle it if it's not)
         if animL_flag == True:
             try:
-                anim_length = int(read_comm*FPS)
+                anim_length = int(read_comm)*FPS
                 animL_flag = False
                 break
             except ValueError,TypeError:
@@ -1140,8 +1140,8 @@ while True:
                                 #creates an infinite loop, but it's just
                                 #a QoL feature so it can be tracked down
                                 #later
-            #animL_flag = True
-            #sound_list[3].play()
+            animL_flag = True
+            sound_list[3].play()
             break
         if read_comm == 'quit':
             break
