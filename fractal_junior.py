@@ -45,7 +45,27 @@ import json
 import pygame
 import numpy as np
 
+def save_path(filename):
+    ##########################
+    #This is where persistent files like cache.json and presets.json should
+    #be written to. Takes the file name as string and returns it appended
+    #to the path, after making sure it exists and creating if not
+    #
+    ##########################
+    folder = os.path.expanduser("~/Library/Application Support/FractalJr")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, filename)
+    if not os.path.exists(path):
+        with open(path, "w") as f:
+            json.dump([],f)
+    return path
+
 def resource_path(relative_path):
+    ##########################
+    #Returns the filename for the temp directory. Useful just for
+    #grabbing assets, but using it for something that needs to have write
+    #access will break the app
+    ##########################
     try:
         base_path = sys._MEIPASS
     except AttributeError:
@@ -81,8 +101,8 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
     
     save_data["name"] = read_comm
     
-    if os.path.exists(resource_path('presets.json')):
-        with open(resource_path('presets.json'), 'r') as f:
+    if os.path.exists(save_path('presets.json')):
+        with open(save_path('presets.json'), 'r') as f:
             data = json.load(f)
     else:
         data = []
@@ -94,7 +114,7 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
         sound_list[3].play()
         data.append(save_data)
 
-    with open(resource_path('presets.json'), 'w') as f:
+    with open(save_path('presets.json'), 'w') as f:
         json.dump(data, f, indent=2)
 
 def show_presets(message,max_save_slots):
@@ -102,7 +122,7 @@ def show_presets(message,max_save_slots):
     #pulls in presets from the JSON and displays them all to the "message"
     #screen (which prints to the pygame window)
     ##########################
-    with open(resource_path('presets.json'),'r') as preset_store:
+    with open(save_path('presets.json'),'r') as preset_store:
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         message = 'Presets: \n'
@@ -128,7 +148,7 @@ def delete_preset(user_entry,max_save_slots):
     #pulls in presets from the JSON and attempts to delete one by matching
     #the read_comm (aka the word the user gave as command) to the preset_name
     ##########################
-    with open(resource_path('presets.json'),'r') as preset_store:
+    with open(save_path('presets.json'),'r') as preset_store:
         data_temp = preset_store.read()
     data_store = json.loads(data_temp)
 
@@ -139,7 +159,7 @@ def delete_preset(user_entry,max_save_slots):
         if user_entry == diction["name"]:
             sound_list[3].play()
             del data_store[i]
-            with open(resource_path('presets.json'), 'w') as f:
+            with open(save_path('presets.json'), 'w') as f:
                 json.dump(data_store, f, indent=2)
             break
         if i >= max_save_slots or i>= len(data_store):
@@ -159,7 +179,9 @@ def load_preset(message,read_comm):
     
     global xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,c_var_i,c_var_r,max_iter,mode
 
-    with open(resource_path('presets.json'),'r') as preset_store:
+
+    with open(save_path('presets.json'),'r') as preset_store:
+
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         
@@ -418,6 +440,10 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
 
 
 def save_screen_surface(border_x,border_y,screen_width,screen_height):
+    ##########################
+    #captures the screen for export within pygame itself
+    #(meaning the pixel scale is retained
+    ##########################
     if border_x < 0:
         border_x = 0
         
@@ -425,7 +451,7 @@ def save_screen_surface(border_x,border_y,screen_width,screen_height):
         rect_area = pygame.Rect(border_x, border_y, screen_width-border_x*2, screen_height-border_y*2)
         area_surf = screen.subsurface(rect_area)       
 
-        folder = os.path.expanduser("~/Desktop/fractal")
+        folder = os.path.expanduser("~/Documents/FractalJr")
         os.makedirs(folder, exist_ok=True)
 
         file_path = os.path.join(folder, f"fractal{frame}.png")
@@ -711,8 +737,10 @@ def keyframe_formula(start_keyframe,end_keyframe,entry_name,normal_time):
     #
     ##########################
     return start_keyframe[entry_name]+(end_keyframe[entry_name]-start_keyframe[entry_name])*normal_time
+
 def ease_out(t):
     return 1 - (1 - t) ** 2
+
 def keyframe_formula_2(start_keyframe,end_keyframe,entry_name,normal_time):
     ##########################
     #Zoom is weird and needs a different slope for its
@@ -757,7 +785,7 @@ def cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_d
         save_cache(anim_cache)
 
 def save_cache(anim_cache):
-    with open(resource_path('cache.json'), 'w') as f:
+    with open(save_path('cache.json'), 'w') as f:
         json.dump(anim_cache, f, indent=2)
     
 def play_cache(anim_cache,frame):
@@ -771,7 +799,7 @@ def play_cache(anim_cache,frame):
     
     #Load cache from JSON
     if frame < 1:
-        with open(resource_path('cache.json'),'r') as cache_file:
+        with open(save_path('cache.json'),'r') as cache_file:
             data_cache = cache_file.read()
             anim_cache = json.loads(data_cache)
     #print("Available keys:", anim_cache.keys())
@@ -1137,7 +1165,7 @@ while True:
         if read_comm == 'animl': #animation length. for some reason this
                                 #creates an infinite loop, but it's just
                                 #a QoL feature so it can be tracked down
-                                #later
+                                #later #Fixed!
             animL_flag = True
             sound_list[3].play()
             break
@@ -1398,9 +1426,4 @@ while True:
         game_cycle = True
         continue
         
-time.sleep(0.05)
-#draw_to_terminal(mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter))
 
-
-
-#mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom)
