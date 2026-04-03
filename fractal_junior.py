@@ -298,7 +298,7 @@ def connect_dots(array_data):
     return flattened
 
 
-def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter):
+def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter,trace_show):
     ##########################
     #the main fractal generator code. it's actually both Julia and Mandelbrot now
     #it's designed to be relatively modular and spit out data to a rendering
@@ -354,30 +354,31 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
 
 
 
+                    if trace_show == True:
                     
-                    #Check all surrounding pixels to see if it's on the border
-                    buffer_check = []
-                    buffer_AND = True
+                        #Check all surrounding pixels to see if it's on the border
+                        buffer_check = []
+                        buffer_AND = True
 
-                    for x2 in range(-1,2):
-                        for y2 in range(-1,2):
-                            if is_in_mandelbrot_set(x+x2,y+y2,z_axis,w_axis,zoom,width,height,viewX,viewY,power,max_iter):
-                                buffer_check.append(True)
-                            else:
-                                buffer_check.append(False)
-                    for buffer in buffer_check:
-                        if buffer == False:
-                            buffer_AND = False
-                    if buffer_AND == False:
-                    
-                        frac_tracer_list.append(x)
-                        frac_tracer_list.append(y)
-                        inside_border=True
-                    else:
-                        inside_border = False
-                    
-                    
-                    break
+                        for x2 in range(-1,2):
+                            for y2 in range(-1,2):
+                                if is_in_mandelbrot_set(x+x2,y+y2,z_axis,w_axis,zoom,width,height,viewX,viewY,power,max_iter):
+                                    buffer_check.append(True)
+                                else:
+                                    buffer_check.append(False)
+                        for buffer in buffer_check:
+                            if buffer == False:
+                                buffer_AND = False
+                        if buffer_AND == False:
+                        
+                            frac_tracer_list.append(x)
+                            frac_tracer_list.append(y)
+                            inside_border=True
+                        else:
+                            inside_border = False
+                        
+                        
+                        break
 
             #Uses the variables from earlier in the function to decide the color
             fill_color = 1 #default color
@@ -785,6 +786,10 @@ def cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_d
         save_cache(anim_cache)
 
 def save_cache(anim_cache):
+    ##########################
+    #Dumps the cache to the appropriate JSON
+    #
+    ##########################
     with open(save_path('cache.json'), 'w') as f:
         json.dump(anim_cache, f, indent=2)
     
@@ -955,7 +960,7 @@ while True:
     #This lil code is so disgusting but it's just grabbing data from mandelbrot_set
     #and passing it over to draw_to_terminal in the following line
     if animation_flag != True:
-        f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter)
+        f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter,trace_show)
     #draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
     #draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
     #"Game loop" logic for color cycling
@@ -994,7 +999,7 @@ while True:
                         break
             else:
                 
-                f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter)
+                f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter,trace_show)
                 cache_animation_frame(frame,anim_length,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,anim_cache)
             screen.fill((0,0,0))
             draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera)
@@ -1141,7 +1146,7 @@ while True:
                 sound_list[3].play()
                 resize_flag = False
                 break
-            except ValueError,TypeError:
+            except (ValueError,TypeError):
                 resize_flag = False
                 #do not break because it's probably another command (and is set up
                 #to handle it if it's not)
@@ -1150,7 +1155,7 @@ while True:
                 anim_length = int(read_comm)*FPS
                 animL_flag = False
                 break
-            except ValueError,TypeError:
+            except (ValueError,TypeError):
                 animL_flag = False
                 #No break
         if save_flag == True:
@@ -1316,7 +1321,7 @@ while True:
                         dev_input = str(input('~'))
                         exec(dev_input)
                       
-                except ValueError,SyntaxError,TypeError:
+                except (ValueError,SyntaxError,TypeError):
                     print('Hey stop poking around in there!')
             
             #zooming in and out
