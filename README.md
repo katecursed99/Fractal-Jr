@@ -22,5 +22,5 @@
 #   - for Script Location, the main script: 'fractal_junior.py'
 #   - for Additional Files, point it to the following folders in the downloaded source folder: src, assets, exports
 #   - for Output (back down in Settings) choose a location to put the data folder and the built application. It defaults to inside the folder, but I like to put it somewhere separate so the source code can be deleted after building
-#   - for Icon, you will need to point it to either the .icns icon or the .ico icon. .ico worked on Linux
+#   - for Icon, you will need to point it to either the .icns icon or the .ico icon. .ico worked on Linux, icns worked on Mac.
 # Click the big blue button to convert! It says .exe but it will make the appropriate type for your machine.
