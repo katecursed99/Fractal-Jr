@@ -108,7 +108,7 @@ def save_settings(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,po
         data = []
 
     if len(data) >= max_save_slots:
-        print('Need to delete a preset to make room!')
+        #print('Need to delete a preset to make room!')
         sound_list[4].play()
     else:
         sound_list[3].play()
@@ -152,7 +152,7 @@ def delete_preset(user_entry,max_save_slots):
         data_temp = preset_store.read()
     data_store = json.loads(data_temp)
 
-        #print(dict(data_store))
+      
     preset_name = user_entry
     i=0
     for i,diction in enumerate(data_store):
@@ -185,7 +185,7 @@ def load_preset(message,read_comm):
         data_temp = preset_store.read()
         data_store = json.loads(data_temp)
         
-        #print(dict(data_store))
+      
         preset_name = read_comm
         i=0
         for diction in data_store:
@@ -285,16 +285,15 @@ def connect_dots(array_data):
     sorted_points = []
     while len(array_data) > 1:
         array_data,super_data = connect_dots_inner(array_data,sorted_points)
-        #print(array_data)
+
         sorted_points.append(tuple(super_data))
     
-    #print('super list'+str(sorted_points))
+  
     converted = [(int(a), int(b)) for a, b in sorted_points]
     flattened=[]
     for a, b in converted:
         flattened.extend([a,b])
-    #print(converted)
-    #print(flattened)
+
     return flattened
 
 
@@ -354,7 +353,14 @@ def mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,p
 
 
 
-                    if trace_show == True:
+                    if trace_show == True: #This single if statement = massive
+                                            #performance gains by omitting
+                                            #trace algorithm when not in use
+
+                        #There is very likely a less computationally heavy
+                        #way to do the trace, but I'm just barely competent
+                        #enough to get this across the finish line rn.
+                        #Future Kate: revisit this next block!
                     
                         #Check all surrounding pixels to see if it's on the border
                         buffer_check = []
@@ -458,9 +464,10 @@ def save_screen_surface(border_x,border_y,screen_width,screen_height):
         file_path = os.path.join(folder, f"fractal{frame}.png")
         try:
             pygame.image.save(area_surf, file_path)
-            print("Saved:", file_path)
+            #print("Saved:", file_path)
         except Exception as e:
-            print("Save failed:", e) 
+            #print("Save failed:", e)
+            pass
 
 def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen_width,screen_height,cycle,c_ticks,video_camera):
     ##########################
@@ -474,7 +481,7 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
     scaled_y = max(screen_height // width, screen_height // height)
     border_x = (screen_width - (height*scaled_x)) / 2
     border_y = (screen_height - (width*scaled_y)) / 2
-    #print(c_ticks)
+
     for i, e in enumerate(frac_matrix_f):
         
         row_end = (i + 1)% height == 0
@@ -501,7 +508,7 @@ def draw_to_screen(frac_matrix_f,width,height,dict_catchers,frac_matrix_s,screen
         
         
 
-        #print(color_hue,color_var,color_sat)
+
         color_hsv.hsva = (color_hue,color_sat,color_var,100)
         
 
@@ -611,28 +618,6 @@ def terminal_keyboard_input(event_key):
         fake_terminal += '9'
         
     return fake_terminal
-
-def refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s):
-    ##########################
-    #refreshes the fractal for color cycling
-    #
-    ##########################
-    if cycle == True:
-        cycle_fractal_colors(dict_catchers,ascii_colors)  
-        draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
-
-        
-def cycle_fractal_colors(dict_catchers,ascii_colors):
-    ##########################
-    #handles the actual cycling of colors
-    #
-    ##########################
-    #First cycle the ascii colors list
-    cycle_list(ascii_colors)
-    #Then use the list to assign the new colors to each catcher
-    for catcher in dict_catchers:
-        col_index = catcher["id"] % len(ascii_colors)
-        catcher["color"] = ascii_colors[col_index]
     
 
 
@@ -699,7 +684,7 @@ def set_up_fractal_environment():
                 }
     max_save_slots = 32 #arbitrary number essentially, but having a max stops it from
                         #searching forever in an intentionally long JSON file
-    #Just a quick hidden swap because I did the original math backwards
+    #Just a quick hidden swap because I did the original math bass ackwards
     temp = width
     width = height
     height = temp
@@ -740,6 +725,10 @@ def keyframe_formula(start_keyframe,end_keyframe,entry_name,normal_time):
     return start_keyframe[entry_name]+(end_keyframe[entry_name]-start_keyframe[entry_name])*normal_time
 
 def ease_out(t):
+    ##########################
+    #Ease out formula for keyframing
+    #
+    ##########################
     return 1 - (1 - t) ** 2
 
 def keyframe_formula_2(start_keyframe,end_keyframe,entry_name,normal_time):
@@ -799,7 +788,7 @@ def play_cache(anim_cache,frame):
     #the renderer to display from the file rather than the
     #slower main function
     ##########################
-    #Returns f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s
+    #Returns f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,anim_cache
     no_frame = False
     
     #Load cache from JSON
@@ -807,23 +796,20 @@ def play_cache(anim_cache,frame):
         with open(save_path('cache.json'),'r') as cache_file:
             data_cache = cache_file.read()
             anim_cache = json.loads(data_cache)
-    #print("Available keys:", anim_cache.keys())
-    #print("Looking for:", str(frame))
-    #print(anim_cache)
+
     while True:
         if no_frame == False:
             diction = anim_cache.get(str(frame))
         else:
             diction = anim_cache.get(str(1))
         if diction:
-            #print(frame, diction["f_frac_matrix_f"])
+            
             frame_data = diction
         
         try:
             return frame_data["f_frac_matrix_f"],frame_data["f_width"],frame_data["f_height"],frame_data["f_dict_catchers"],frame_data["f_frac_matrix_s"],anim_cache
-            no_frame = False
         except UnboundLocalError:
-            print('Unable to find frame '+str(frame))
+            #print('Unable to find frame '+str(frame))
             no_frame = True
             continue
     
@@ -853,10 +839,10 @@ sound_list[0].play()
 
 
 
-
-ascii_density = list('░▒▓█.:-=+*#%@') #.:-=+*#%@
-ascii_density.reverse()
-ascii_colors = ["white", "red", "yellow", "green", "blue", "purple", "pink" ]
+# Vestigials from the ASCII terminal version.
+#ascii_density = list('░▒▓█') #.:-=+*#%@
+#ascii_density.reverse()
+#ascii_colors = ["white", "red", "yellow", "green", "blue", "purple", "pink" ]
 
 
 dict_catchers = [{ #These are mostly a remnant of the ASCII-in-terminal
@@ -961,9 +947,10 @@ while True:
     #and passing it over to draw_to_terminal in the following line
     if animation_flag != True:
         f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s = mandelbrot_set(xpos,ypos,width,height,viewX,viewY,scale,z_axis,w_axis,zoom,power,dict_catchers,max_iter,trace_show)
-    #draw_to_terminal(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
-    #draw_to_screen(f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,screen_width,screen_height)
-    #"Game loop" logic for color cycling
+
+    #"Game loop" logic
+
+
     
     if c_ticks >= 60:
         message = "command:"
@@ -985,8 +972,7 @@ while True:
             if play_animation_flag == True:
                 f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s,anim_cache = play_cache(anim_cache,frame)
                 video_camera = True
-                #print(anim_current_loop)
-                #print(anim_loops_max)
+                
                 if frame >= anim_length-1:
                     anim_current_loop += 1
                     frame = 0               
@@ -1027,12 +1013,18 @@ while True:
                 aspect = height/width
                 screen_width = aspect*screen_height
                 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
-        #Keyboard triggers
+
+    #Keyboard hotkeys
+#The input system looks really complicated but it's easy to understand with a
+#bit of insight into the development history; this was originally an ASCII
+#toy meant to run in the CLI. The "read_comm" system and "fake terminal" come
+#from that, and I chose to leave it because it makes it trivial to add hotkeys
+#by filling in the keyword (see the escape key event below)
+                
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     read_comm = 'quit'
                     enter = True
-                    #game_cycle = not game_cycle
                     fake_terminal = "" #clear fake terminal
                     game_cycle = not game_cycle
                 if event.key == pygame.K_RETURN:
@@ -1058,8 +1050,6 @@ while True:
             screen.blit(title, (screen_width//13,screen_height//34*13))
             screen.blit(credit, (screen_width//13,screen_height//34*21))
         screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
-        #if c_ticks % refresh_every == 0:
-            #refresh_fractal_colors(ascii_colors,cycle,f_frac_matrix_f,f_width,f_height,f_dict_catchers,f_frac_matrix_s)
         clock.tick(FPS)
         c_ticks += 1
         pygame.display.flip()
@@ -1073,16 +1063,14 @@ while True:
             try:
                 new_frame = play_animation(start_keyframe,end_keyframe,frame,anim_length)
             except NameError:
-                print('No anim to play')
+                #print('No anim to play')
                 animation_flag = False
                 break
-            #print(new_frame)
+            
 
             
             xpos = new_frame["xpos"]
             ypos = new_frame["ypos"]
-            #width = new_frame["width"]
-            #height = new_frame["height"]
             viewX = new_frame["viewX"]
             viewY = new_frame["viewY"]
             scale = new_frame["scale"]
@@ -1096,7 +1084,7 @@ while True:
 
             
             frame+=1
-            #print(frame)
+       
             
             if frame >= anim_length:
                 frame = 0
@@ -1123,14 +1111,14 @@ while True:
             help_flag = False
         if read_comm == 'help':
             help_flag = True
-            print('\n       Enter commands, then hit enter to run!                           ')
-            print('       W +              -   +          -   +            -   +         ')
-            print('     A<->D = x,y axes | X<->Z = zoom | V<->F = Z-axis | G<->B = kata/ana')
-            print('     - S    ')
-            print('     N<->H = power | M<->J = c-factor (real) | I<->K = c-factor (imaginary)')
-            print('     You can issue multiple 1-char commands per entry to be more efficient')
-            print('       Capital letters have the same function but are 10x as powerful')
-            print('     Keyword commands: mandelbrot, julia, resize, help, save, load, quit')
+            #print('\n       Enter commands, then hit enter to run!                           ')
+            #print('       W +              -   +          -   +            -   +         ')
+            #print('     A<->D = x,y axes | X<->Z = zoom | V<->F = Z-axis | G<->B = kata/ana')
+            #print('     - S    ')
+            #print('     N<->H = power | M<->J = c-factor (real) | I<->K = c-factor (imaginary)')
+            #print('     You can issue multiple 1-char commands per entry to be more efficient')
+            #print('       Capital letters have the same function but are 10x as powerful')
+            #print('     Keyword commands: mandelbrot, julia, resize, help, save, load, quit')
 
             break
 
@@ -1167,10 +1155,7 @@ while True:
             sound_list[3].play()
             break
         
-        if read_comm == 'animl': #animation length. for some reason this
-                                #creates an infinite loop, but it's just
-                                #a QoL feature so it can be tracked down
-                                #later #Fixed!
+        if read_comm == 'animl': #animation length
             animL_flag = True
             sound_list[3].play()
             break
@@ -1223,8 +1208,8 @@ while True:
             sound_list[0].play()
             break
         if read_comm == 'anim':
-            print('animation')
-            print(anim_counter)
+            #print('animation')
+            #print(anim_counter)
             if anim_counter == 0:
                 start_keyframe = {
                 "xpos": xpos,
@@ -1315,7 +1300,12 @@ while True:
             if read_key.isupper():
                 control_factor*=10
                 read_key = read_key.lower()
-            if read_key == '~':
+
+
+            if read_key == '~':  #This allows for the in-game "command line"
+                                #to actually execute Python code, but only if
+                                #dev mode is on. Probably remove this as soon
+                                #as debugging is mostly done
                 try:
                     if dev_mode == True:
                         dev_input = str(input('~'))
@@ -1419,7 +1409,7 @@ while True:
            
 
     if read_comm == 'quit':
-        print('Have a lovely day <3')
+        
         screen.fill((0,0,0))
         terminal_screen = my_font.render("have a lovely day <3", False, (200, 200, 200))
         screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
