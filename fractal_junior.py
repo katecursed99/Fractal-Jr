@@ -839,11 +839,6 @@ sound_list[0].play()
 
 
 
-# Vestigials from the ASCII terminal version.
-#ascii_density = list('░▒▓█') #.:-=+*#%@
-#ascii_density.reverse()
-#ascii_colors = ["white", "red", "yellow", "green", "blue", "purple", "pink" ]
-
 
 dict_catchers = [{ #These are mostly a remnant of the ASCII-in-terminal
         "id":1,    #version on first glance but they're load-bearing
@@ -903,20 +898,14 @@ for dicti in dict_catchers:
 #------------------------------#
 
 anim_seconds = 10
-
 anim_loops_max = 1
 anim_current_loop = 0
 video_camera = False
-
-
-
-
 frame=0
-
-#draw_title(ascii_colors,20)
 screen_width = 640
 screen_height = 480
 my_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//32)
+readout_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//42)
 title_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//20)
 credit_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), screen_width//28)
 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
@@ -925,6 +914,7 @@ refresh_every = 1
 clock = pygame.time.Clock()
 animation_flag = False
 animL_flag = False
+relative_flag = False
 resize_flag = False
 load_flag = False
 save_flag = False
@@ -935,14 +925,15 @@ anim_counter = 0
 anim_cache = {}
 c_ticks = 0
 fake_terminal = "" #this is the onscreen terminal in the pygame window
-help_message = 'enter commands, then hit enter to run!\nCapital letters are 10x lowercase.\n\nWASD = x,y axes | X<->Z = zoom | V<->F = Z-axis | \nG<->B = kata/ana | N<->H = power \nM<->J = c-factor (real) | I<->K = c-factor (imaginary)\n\nSome only apply to one mode or the other\n\nKeywords: mandelbrot, julia, resize, help, \nsave, load, delete, quit, anim, cancel, play, \nmute, trace, animl'
+readout_data = 'Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3))
+help_message = 'enter commands, then hit enter to run!\nCapital letters are 10x lowercase.\n\nWASD = x,y axes | X<->Z = zoom | V<->F = Z-axis | \nG<->B = kata/ana | N<->H = power \nM<->J = c-factor (real) | I<->K = c-factor (imaginary)\n\nSome only apply to one mode or the other\n\nKeywords: mandelbrot, julia, resize, help, \nsave, load, delete, quit, anim, cancel, play, \nmute, trace, animl, relative'
 anim_length = anim_seconds*FPS
 
 
 
-anim_length += 2
+anim_length += 2 # Try taking this out
 while True:
-    
+    readout_data = 'Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3))
     #This lil code is so disgusting but it's just grabbing data from mandelbrot_set
     #and passing it over to draw_to_terminal in the following line
     if animation_flag != True:
@@ -1013,6 +1004,8 @@ while True:
                 aspect = height/width
                 screen_width = aspect*screen_height
                 screen = pygame.display.set_mode((screen_width, screen_height), pygame.RESIZABLE)
+                my_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), int(screen_width//32))
+                readout_font = pygame.font.Font(resource_path('assets/LineBeam.ttf'), int(screen_width//42))
 
     #Keyboard hotkeys
 #The input system looks really complicated but it's easy to understand with a
@@ -1042,6 +1035,7 @@ while True:
 
                 
         terminal_screen = my_font.render(message+' '+fake_terminal, False, (250, 250, 250))
+        terminal_readout = readout_font.render(readout_data, False, (250, 250, 250))
         title = title_font.render("Fractal Jr.", False, (250, 250, 250))
         credit = credit_font.render("© 2026 Kate the Cursed", False, (250, 250, 250))
         screen.fill((0,0,0))
@@ -1050,6 +1044,7 @@ while True:
             screen.blit(title, (screen_width//13,screen_height//34*13))
             screen.blit(credit, (screen_width//13,screen_height//34*21))
         screen.blit(terminal_screen, (screen_width//13,screen_height//34*2))
+        screen.blit(terminal_readout, (screen_width//13,screen_height//34*28))
         clock.tick(FPS)
         c_ticks += 1
         pygame.display.flip()
@@ -1260,6 +1255,10 @@ while True:
             animation_flag = False
             sound_list[4].play()
             break
+        if read_comm == 'relative':
+            relative_flag = not relative_flag
+            sound_list[3].play()
+            break
         if read_comm == 'play':
             play_animation_flag = True
             animation_flag = True
@@ -1353,52 +1352,88 @@ while True:
             elif read_key == 'v':
                 if ticker == 1:
                     sound_list[2].play()
-                z_axis-=control_factor
+                if relative_flag == True:
+                    z_axis-=control_factor/(zoom*0.5)
+                else:
+                    z_axis-=control_factor
                 continue
             elif read_key == 'f':
                 if ticker == 1:
                     sound_list[2].play()
-                z_axis+=control_factor
+                if relative_flag == True:
+                    z_axis+=control_factor/(zoom*0.5)
+                else:
+                    z_axis+=control_factor
                 continue
             elif read_key == 'g':
                 if ticker == 1:
                     sound_list[2].play()
-                w_axis+=control_factor
+                if relative_flag == True:
+                    w_axis+=control_factor/(zoom*0.5)
+                else:
+                    w_axis+=control_factor
                 continue
             elif read_key == 'b':
                 if ticker == 1:
                     sound_list[2].play()
-                w_axis-=control_factor
+                if relative_flag == True:
+                    w_axis-=control_factor/(zoom*0.5)
+                else:
+                    w_axis-=control_factor
                 continue
             elif read_key == 'h':
                 if ticker == 1:
                     sound_list[2].play()
-                power+=control_factor
+                if relative_flag == True:
+                    power+=control_factor/(zoom*0.5)
+                else:
+                    power+=control_factor
                 continue
+            
             elif read_key == 'n':
                 if ticker == 1:
                     sound_list[2].play()
-                power-=control_factor
+                if relative_flag == True:
+                    power-=control_factor/(zoom*0.5)
+                else:
+                    power-=control_factor
+                continue
                 continue
             elif read_key == 'j':
                 if ticker == 1:
                     sound_list[2].play()
-                c_var_r+=control_factor
+                if relative_flag == True:
+                    c_var_r+=control_factor/(zoom*0.5)
+                else:
+                    c_var_r+=control_factor
+                continue
                 continue
             elif read_key == 'm':
                 if ticker == 1:
                     sound_list[2].play()
-                c_var_r-=control_factor
+                if relative_flag == True:
+                    c_var_r-=control_factor/(zoom*0.5)
+                else:
+                    c_var_r-=control_factor
+                continue
                 continue
             elif read_key == 'i':
                 if ticker == 1:
                     sound_list[2].play()
-                c_var_i+=control_factor
+                if relative_flag == True:
+                    c_var_i+=control_factor/(zoom*0.5)
+                else:
+                    c_var_i+=control_factor
+                continue
                 continue
             elif read_key == 'k':
                 if ticker == 1:
                     sound_list[2].play()
-                c_var_i-=control_factor
+                if relative_flag == True:
+                    c_var_i-=control_factor/(zoom*0.5)
+                else:
+                    c_var_i-=control_factor
+                continue
                 continue
         if enter == True:
             enter_flag = True
