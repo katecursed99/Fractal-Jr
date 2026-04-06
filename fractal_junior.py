@@ -222,8 +222,11 @@ def apply_mods(mode,cx,cy,z_axis,w_axis,c_var_r,c_var_i):
         z = complex(z_axis, w_axis)
         c = complex(cx, cy)
     elif mode == "julia":
-        z = complex(cx+z_axis, cy+w_axis)
+        z = complex(cx, cy)
         c = complex(c_var_r, c_var_i)
+    elif mode == "hybrid":
+        z = complex(z_axis, w_axis)
+        c = complex(cx*c_var_r, cy*c_var_i)
     return c,z
 
 def is_in_mandelbrot_set(x,y,z_axis,w_axis,zoom,width,height,viewX,viewY,power,max_iter):
@@ -933,7 +936,10 @@ anim_length = anim_seconds*FPS
 
 anim_length += 2 # Try taking this out
 while True:
-    readout_data = 'Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3))
+    try:
+        readout_data = 'Coords: x:'+str(round(viewX,3))+'y:'+str(round(viewY,3))+'i, formula: z^'+str(round(power,3))+'+c*'+str(round(c_var_r))+'+'+str(round(c_var_i))+'i, z0:'+str(round(z_axis,3))+', c0:'+str(round(w_axis,3))+' zoom:'+str(round(zoom,3))
+    except TypeError:
+        pass
     #This lil code is so disgusting but it's just grabbing data from mandelbrot_set
     #and passing it over to draw_to_terminal in the following line
     if animation_flag != True:
@@ -1189,17 +1195,8 @@ while True:
             mode = 'julia'
             sound_list[0].play()
             break
-        if read_comm == 'seahorse':
-            mode = 'mandelbrot'
-            viewX = -0.745
-            viewY = 0.115
-            zoom = 20
-            power = 2
-            c_var_r = 1
-            c_var_i = 0
-            c_var = complex(c_var_i,c_var_r)
-            z_axis = 0
-            w_axis = 0
+        if read_comm == 'hybrid':
+            mode = 'hybrid'
             sound_list[0].play()
             break
         if read_comm == 'anim':
