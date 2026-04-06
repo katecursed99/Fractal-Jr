@@ -7,7 +7,7 @@
   },
   {
    "optionDest": "filenames",
-   "value": "/Users/Your_Name/Documents/GitHub/Fractal-Jr/fractal_junior.py"
+   "value": "/Users/username/Documents/GitHub/Fractal-Jr/fractal_junior.py"
   },
   {
    "optionDest": "onefile",
@@ -19,7 +19,7 @@
   },
   {
    "optionDest": "icon_file",
-   "value": "/Users/Your-Name/Documents/GitHub/Fractal-Jr/src/assets/fractal_icon.icns"
+   "value": "/Users/username/Documents/GitHub/Fractal-Jr/src/assets/fractal_icon.icns"
   },
   {
    "optionDest": "name",
@@ -67,15 +67,15 @@
   },
   {
    "optionDest": "datas",
-   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/src:src/"
+   "value": "/Users/username/Documents/GitHub/Fractal-Jr/src:src/"
   },
   {
    "optionDest": "datas",
-   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/assets:assets/"
+   "value": "/Users/username/Documents/GitHub/Fractal-Jr/assets:assets/"
   },
   {
    "optionDest": "datas",
-   "value": "/Users/katherinajesek/Documents/GitHub/Fractal-Jr/exports:exports/"
+   "value": "/Users/username/Documents/GitHub/Fractal-Jr/exports:exports/"
   }
  ],
  "nonPyinstallerOptions": {
